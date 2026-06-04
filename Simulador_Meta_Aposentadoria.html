@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Meta de Aposentadoria — Purungo Consultorias</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f1117;--s1:#1a1d2e;--s2:#141620;--border:#2a2d3e;
+  --text:#e0e0e0;--muted:#6b7194;--muted2:#3d4166;
+  --blue:#60a5fa;--green:#4ade80;--orange:#f97316;--purple:#a78bfa;--gold:#fbbf24;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;padding:24px;}
+.wrap{max-width:1180px;margin:0 auto;}
+
+.header{display:flex;align-items:center;gap:14px;margin-bottom:22px;}
+.hicon{width:42px;height:42px;background:linear-gradient(135deg,#a78bfa,#f97316);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.header h1{font-size:19px;font-weight:700;color:#fff;}
+.header p{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* INPUTS */
+.inputs-shared{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:20px 22px;margin-bottom:14px;}
+.inputs-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;}
+.inputs-row{display:grid;gap:12px;}
+.r6{grid-template-columns:repeat(6,1fr);}
+.r2{grid-template-columns:repeat(2,1fr);}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.iw{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--s2);transition:border-color .15s;}
+.iw:focus-within{border-color:#a78bfa;}
+.pfx{padding:0 10px;background:rgba(167,139,250,.12);color:var(--purple);font-size:11px;font-weight:600;display:flex;align-items:center;border-right:1px solid var(--border);white-space:nowrap;}
+.iw input{background:transparent;border:none;color:#fff;font-size:14px;font-weight:700;padding:9px 10px;width:100%;outline:none;}
+.iw input::-webkit-inner-spin-button{display:none;}
+
+/* META HERO */
+.meta-hero{background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(249,115,22,.08));border:1px solid rgba(167,139,250,.3);border-radius:13px;padding:18px 22px;margin-bottom:14px;display:flex;align-items:center;gap:20px;}
+.meta-hero-icon{font-size:36px;}
+.meta-hero-val{font-size:32px;font-weight:800;color:#fff;line-height:1;}
+.meta-hero-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.meta-hero-arrow{font-size:24px;color:var(--muted2);margin:0 10px;}
+.meta-patrimonio{font-size:20px;font-weight:700;color:var(--gold);line-height:1;}
+.meta-pat-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* CENÁRIOS */
+.cenarios-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+.cenario-box{border-radius:13px;padding:18px;border:2px solid transparent;transition:all .2s;cursor:pointer;}
+.cenario-box.cons{background:rgba(96,165,250,.06);border-color:rgba(96,165,250,.25);}
+.cenario-box.intr{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.25);}
+.cenario-box.arro{background:rgba(249,115,22,.06);border-color:rgba(249,115,22,.25);}
+.cenario-box.active.cons{border-color:#60a5fa;box-shadow:0 0 0 1px rgba(96,165,250,.3);}
+.cenario-box.active.intr{border-color:#4ade80;box-shadow:0 0 0 1px rgba(74,222,128,.3);}
+.cenario-box.active.arro{border-color:#f97316;box-shadow:0 0 0 1px rgba(249,115,22,.3);}
+.cen-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.cen-icon{font-size:20px;}
+.cen-name{font-size:14px;font-weight:700;color:#fff;}
+.cen-desc{font-size:10px;color:var(--muted);margin-top:1px;}
+.cen-kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.ck{background:rgba(0,0,0,.2);border-radius:7px;padding:8px 10px;}
+.ck-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.ck-val{font-size:13px;font-weight:700;color:#fff;}
+.ck-val.cons{color:#60a5fa;}
+.ck-val.intr{color:#4ade80;}
+.ck-val.arro{color:#f97316;}
+.ck-val.ok{color:#4ade80;}
+.ck-val.warn{color:#fbbf24;}
+
+/* APORTE DESTAQUE */
+.aporte-destaque{font-size:22px;font-weight:800;line-height:1;margin-bottom:4px;}
+.aporte-destaque.cons{color:#60a5fa;}
+.aporte-destaque.intr{color:#4ade80;}
+.aporte-destaque.arro{color:#f97316;}
+.aporte-sub{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+
+.rate-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.rate-row .iw{flex:1;}
+
+/* BOTÃO */
+.btn-calc{background:#a78bfa;color:#fff;border:none;border-radius:9px;padding:12px 28px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:background .15s;margin-bottom:14px;letter-spacing:.3px;}
+.btn-calc:hover{background:#b69dfb;}
+
+/* CHART */
+.chart-wrap{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:18px;margin-bottom:14px;}
+.chart-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.chart-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.legend{display:flex;gap:14px;flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.ld{width:20px;height:3px;border-radius:2px;}
+
+/* TABS DETALHE */
+.tab-nav{display:flex;gap:6px;margin-bottom:10px;}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.tab-btn.active.cons{background:rgba(96,165,250,.15);border-color:#60a5fa;color:#60a5fa;}
+.tab-btn.active.intr{background:rgba(74,222,128,.15);border-color:#4ade80;color:#4ade80;}
+.tab-btn.active.arro{background:rgba(249,115,22,.15);border-color:#f97316;color:#f97316;}
+
+/* TABLE */
+.table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:18px;overflow-x:auto;}
+.ev-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ev-table th{text-align:right;padding:8px 12px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.ev-table th:first-child,.ev-table th:nth-child(2){text-align:left;}
+.ev-table td{padding:8px 12px;text-align:right;border-bottom:1px solid rgba(42,45,62,.35);white-space:nowrap;}
+.ev-table td:first-child,.ev-table td:nth-child(2){text-align:left;}
+.row-acc{background:rgba(167,139,250,.04);}
+.row-acc:hover{background:rgba(167,139,250,.09)!important;}
+.row-apex{background:rgba(251,191,36,.12)!important;font-weight:700;}
+.ev-table tr:hover td{background:rgba(255,255,255,.02);}
+.ev-table tr:last-child td{border-bottom:none;}
+.pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;margin-left:4px;}
+.note{font-size:10px;color:var(--muted2);text-align:center;padding:10px 0;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="hicon">🏆</div>
+    <div>
+      <h1>Meta de Aposentadoria — Quanto Preciso Guardar?</h1>
+      <p>Purungo Consultorias · Diga quanto quer receber e descubra o caminho para chegar lá</p>
+    </div>
+  </div>
+
+  <!-- META HERO -->
+  <div class="meta-hero" id="metaHero" style="display:none;">
+    <div class="meta-hero-icon">💰</div>
+    <div>
+      <div class="meta-hero-val" id="heroRenda">R$ —</div>
+      <div class="meta-hero-sub">renda mensal desejada na aposentadoria</div>
+    </div>
+    <div class="meta-hero-arrow">→</div>
+    <div>
+      <div class="meta-patrimonio" id="heroPatrimonio">R$ —</div>
+      <div class="meta-pat-sub">patrimônio necessário (a taxa de retirada definida)</div>
+    </div>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="inputs-shared">
+    <div class="inputs-title">Objetivo do cliente (compartilhado nos 3 cenários)</div>
+    <div class="inputs-row r6" style="margin-bottom:12px;">
+      <div class="fg">
+        <label>Renda Desejada/mês</label>
+        <div class="iw"><div class="pfx">R$</div><input type="number" id="rendaMeta" value="10000" min="0"></div>
+      </div>
+      <div class="fg">
+        <label>Idade Atual</label>
+        <div class="iw"><div class="pfx">🎂</div><input type="number" id="idadeAtual" value="32" min="1" max="100"></div>
+      </div>
+      <div class="fg">
+        <label>Aposentadoria</label>
+        <div class="iw"><div class="pfx">🏖️</div><input type="number" id="idadeApos" value="55" min="1" max="100"></div>
+      </div>
+      <div class="fg">
+        <label>Expectativa de Vida</label>
+        <div class="iw"><div class="pfx">📅</div><input type="number" id="idadeVida" value="85" min="1" max="120"></div>
+      </div>
+      <div class="fg">
+        <label>Patrimônio Atual</label>
+        <div class="iw"><div class="pfx">R$</div><input type="number" id="vInicial" value="50000"></div>
+      </div>
+      <div class="fg">
+        <label>Retirada a.a.</label>
+        <div class="iw"><div class="pfx">%</div><input type="number" id="txRetirada" value="5" step="0.1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENÁRIOS -->
+  <div class="cenarios-wrap">
+
+    <div class="cenario-box cons active" id="box-cons" onclick="setActiveTab('cons')">
+      <div class="cen-header">
+        <div class="cen-icon">🛡️</div>
+        <div><div class="cen-name">Conservador</div><div class="cen-desc">Renda fixa, CDBs, Tesouro</div></div>
+      </div>
+      <div class="rate-row">
+        <div class="fg" style="flex:1">
+          <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Retorno a.a.</label>
+          <div class="iw"><div class="pfx" style="background:rgba(96,165,250,.1);color:#60a5fa;">%</div><input type="number" id="taxa-cons" value="8" step="0.1"></div>
+        </div>
+      </div>
+      <div class="aporte-destaque cons" id="ad-cons">—</div>
+      <div class="aporte-sub">aporte mensal necessário</div>
+      <div class="cen-kpis" style="margin-top:10px;">
+        <div class="ck"><div class="ck-label">Pat. Necessário</div><div class="ck-val cons" id="kc-pat">—</div></div>
+        <div class="ck"><div class="ck-label">Total a Investir</div><div class="ck-val cons" id="kc-inv">—</div></div>
+        <div class="ck"><div class="ck-label">Pat. Final (uso)</div><div class="ck-val" id="kc-final">—</div></div>
+        <div class="ck"><div class="ck-label">Anos de Renda</div><div class="ck-val cons" id="kc-anos">—</div></div>
+      </div>
+    </div>
+
+    <div class="cenario-box intr" id="box-intr" onclick="setActiveTab('intr')">
+      <div class="cen-header">
+        <div class="cen-icon">⚖️</div>
+        <div><div class="cen-name">Intermediário</div><div class="cen-desc">Mix balanceado, FIIs, ações</div></div>
+      </div>
+      <div class="rate-row">
+        <div class="fg" style="flex:1">
+          <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Retorno a.a.</label>
+          <div class="iw"><div class="pfx" style="background:rgba(74,222,128,.1);color:#4ade80;">%</div><input type="number" id="taxa-intr" value="12" step="0.1"></div>
+        </div>
+      </div>
+      <div class="aporte-destaque intr" id="ad-intr">—</div>
+      <div class="aporte-sub">aporte mensal necessário</div>
+      <div class="cen-kpis" style="margin-top:10px;">
+        <div class="ck"><div class="ck-label">Pat. Necessário</div><div class="ck-val intr" id="ki-pat">—</div></div>
+        <div class="ck"><div class="ck-label">Total a Investir</div><div class="ck-val intr" id="ki-inv">—</div></div>
+        <div class="ck"><div class="ck-label">Pat. Final (uso)</div><div class="ck-val" id="ki-final">—</div></div>
+        <div class="ck"><div class="ck-label">Anos de Renda</div><div class="ck-val intr" id="ki-anos">—</div></div>
+      </div>
+    </div>
+
+    <div class="cenario-box arro" id="box-arro" onclick="setActiveTab('arro')">
+      <div class="cen-header">
+        <div class="cen-icon">🚀</div>
+        <div><div class="cen-name">Arrojado</div><div class="cen-desc">Maior renda variável, ações</div></div>
+      </div>
+      <div class="rate-row">
+        <div class="fg" style="flex:1">
+          <label style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Retorno a.a.</label>
+          <div class="iw"><div class="pfx" style="background:rgba(249,115,22,.1);color:#f97316;">%</div><input type="number" id="taxa-arro" value="15" step="0.1"></div>
+        </div>
+      </div>
+      <div class="aporte-destaque arro" id="ad-arro">—</div>
+      <div class="aporte-sub">aporte mensal necessário</div>
+      <div class="cen-kpis" style="margin-top:10px;">
+        <div class="ck"><div class="ck-label">Pat. Necessário</div><div class="ck-val arro" id="ka-pat">—</div></div>
+        <div class="ck"><div class="ck-label">Total a Investir</div><div class="ck-val arro" id="ka-inv">—</div></div>
+        <div class="ck"><div class="ck-label">Pat. Final (uso)</div><div class="ck-val" id="ka-final">—</div></div>
+        <div class="ck"><div class="ck-label">Anos de Renda</div><div class="ck-val arro" id="ka-anos">—</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="btn-calc" onclick="calcularTodos()">▶ Calcular os 3 Cenários</button>
+
+  <!-- GRÁFICO -->
+  <div class="chart-wrap">
+    <div class="chart-hd">
+      <div class="chart-title">Trajetória de Acumulação até a Meta</div>
+      <div class="legend">
+        <div class="li"><div class="ld" style="background:#60a5fa;"></div> Conservador</div>
+        <div class="li"><div class="ld" style="background:#4ade80;"></div> Intermediário</div>
+        <div class="li"><div class="ld" style="background:#f97316;"></div> Arrojado</div>
+        <div class="li"><div class="ld" style="background:#fbbf24;border-top:2px dashed #fbbf24;height:0;"></div> Meta</div>
+      </div>
+    </div>
+    <canvas id="mainChart" height="210"></canvas>
+  </div>
+
+  <!-- TABS DETALHE -->
+  <div class="tab-nav">
+    <button class="tab-btn active cons" id="tabn-cons" onclick="setActiveTab('cons')">🛡️ Conservador</button>
+    <button class="tab-btn intr"        id="tabn-intr" onclick="setActiveTab('intr')">⚖️ Intermediário</button>
+    <button class="tab-btn arro"        id="tabn-arro" onclick="setActiveTab('arro')">🚀 Arrojado</button>
+  </div>
+
+  <div class="table-wrap">
+    <div id="tabelaContainer"><div class="note" style="padding:30px">Clique em "Calcular os 3 Cenários" para ver a tabela detalhada.</div></div>
+  </div>
+
+  <div class="note" style="margin-top:10px;">Simulação educacional · Valores nominais · Retorno líquido estimado · Purungo Consultorias</div>
+</div>
+
+<script>
+let mainChart = null;
+let activeTab  = 'cons';
+let resultados = {};
+
+const STORAGE_KEY = 'purungo_sim_meta_v1';
+const INPUT_IDS   = ['rendaMeta','idadeAtual','idadeApos','idadeVida','vInicial','txRetirada','taxa-cons','taxa-intr','taxa-arro'];
+
+const fR  = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fRk = v => { const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M'; if(a>=1e3) return 'R$ '+(v/1e3).toFixed(1).replace('.',',')+'k'; return fR(v); };
+const toMR = t => Math.pow(1 + t/100, 1/12) - 1;
+
+function getInputs() {
+  return {
+    rendaMeta: +document.getElementById('rendaMeta').value || 10000,
+    idAtual:   +document.getElementById('idadeAtual').value || 32,
+    idApos:    +document.getElementById('idadeApos').value  || 55,
+    idVida:    +document.getElementById('idadeVida').value  || 85,
+    vi:        +document.getElementById('vInicial').value   || 0,
+    txRet:     +document.getElementById('txRetirada').value || 5,
+  };
+}
+
+// PMT reverso: quanto precisa guardar por mês para atingir FV, dado PV atual e taxa mensal em n meses
+function calcPMT(fv, pv, r, n) {
+  if(r === 0) return Math.max(0, (fv - pv) / n);
+  const factor = Math.pow(1 + r, n);
+  return Math.max(0, (fv - pv * factor) * r / (factor - 1));
+}
+
+function calcularCenario(taxa, inputs) {
+  const { rendaMeta, idAtual, idApos, idVida, vi, txRet } = inputs;
+  const anoAcc = idApos - idAtual;
+  const anoRet = idVida - idApos;
+  if(anoAcc <= 0 || anoRet <= 0) return null;
+
+  const mr   = toMR(taxa);
+  const n    = anoAcc * 12;                          // meses de acumulação
+  const meta = rendaMeta * 12 / (txRet / 100);       // patrimônio necessário
+  const pmt  = calcPMT(meta, vi, mr, n);             // aporte mensal necessário
+
+  // Simula acumulação mês a mês, registra anualmente
+  const dadosAcc = [];
+  let patrimonio = vi;
+  for(let ano = 0; ano <= anoAcc; ano++) {
+    const totalInvestido = vi + pmt * ano * 12;
+    dadosAcc.push({ idade: idAtual + ano, patrimonio, totalInvestido, aporte: pmt });
+    if(ano < anoAcc) {
+      for(let m = 0; m < 12; m++) patrimonio = patrimonio * (1 + mr) + pmt;
+    }
+  }
+
+  const patFinalAcc = dadosAcc[dadosAcc.length - 1].patrimonio;
+
+  // Simula fase de retirada
+  const dadosRet = [];
+  let patRet = patFinalAcc;
+  let totalRetirado = 0;
+  for(let ano = 0; ano <= anoRet; ano++) {
+    const rendaMensal = patRet > 0 ? patRet * (txRet/100) / 12 : 0;
+    dadosRet.push({ idade: idApos + ano, patrimonioInicio: patRet, rendaMensal, totalRetirado });
+    if(ano < anoRet && patRet > 0) {
+      for(let m = 0; m < 12; m++) {
+        const retirada = patRet * (txRet/100) / 12;
+        patRet = patRet * (1 + mr) - retirada;
+        totalRetirado += retirada;
+        if(patRet < 0) patRet = 0;
+      }
+    }
+  }
+
+  const patFinalRet = dadosRet[dadosRet.length - 1].patrimonioInicio;
+  const totalInvestido = vi + pmt * anoAcc * 12;
+
+  return { pmt, meta, dadosAcc, dadosRet, patFinalAcc, patFinalRet, totalInvestido, taxa, anoAcc, anoRet, idAtual, idApos, idVida, txRet, rendaMeta };
+}
+
+function atualizarCard(key, res) {
+  const pfx = {cons:'kc', intr:'ki', arro:'ka'}[key];
+  document.getElementById('ad-'+key).textContent = fRk(res.pmt)+'/mês';
+  document.getElementById(pfx+'-pat').textContent  = fRk(res.meta);
+  document.getElementById(pfx+'-inv').textContent  = fRk(res.totalInvestido);
+  const finalEl = document.getElementById(pfx+'-final');
+  finalEl.textContent = fRk(res.patFinalRet);
+  finalEl.className = 'ck-val ' + (res.patFinalRet > res.meta * 0.5 ? 'ok' : 'warn');
+  document.getElementById(pfx+'-anos').textContent = res.anoRet + ' anos';
+}
+
+function setActiveTab(tab) {
+  activeTab = tab;
+  ['cons','intr','arro'].forEach(t => {
+    document.getElementById('box-'+t).classList.toggle('active', t===tab);
+    const btn = document.getElementById('tabn-'+t);
+    btn.className = 'tab-btn ' + t + (t===tab ? ' active' : '');
+  });
+  if(resultados[tab]) renderTabela(tab);
+}
+
+function calcularTodos() {
+  const inputs = getInputs();
+  if(inputs.idApos <= inputs.idAtual) { alert('Idade de aposentadoria deve ser maior que a atual.'); return; }
+  if(inputs.idVida <= inputs.idApos)  { alert('Expectativa de vida deve ser maior que a aposentadoria.'); return; }
+
+  const taxas = {
+    cons: +document.getElementById('taxa-cons').value || 8,
+    intr: +document.getElementById('taxa-intr').value || 12,
+    arro: +document.getElementById('taxa-arro').value || 15,
+  };
+
+  resultados = {
+    cons: calcularCenario(taxas.cons, inputs),
+    intr: calcularCenario(taxas.intr, inputs),
+    arro: calcularCenario(taxas.arro, inputs),
+  };
+
+  // Hero
+  const meta = resultados.cons?.meta || 0;
+  document.getElementById('heroRenda').textContent     = fR(inputs.rendaMeta)+'/mês';
+  document.getElementById('heroPatrimonio').textContent = fRk(meta);
+  document.getElementById('metaHero').style.display = 'flex';
+
+  ['cons','intr','arro'].forEach(k => { if(resultados[k]) atualizarCard(k, resultados[k]); });
+
+  renderGrafico(inputs);
+  renderTabela(activeTab);
+  salvarInputs();
+}
+
+function renderGrafico(inputs) {
+  const rc = resultados.cons, ri = resultados.intr, ra = resultados.arro;
+  if(!rc || !ri || !ra) return;
+
+  const allAges = rc.dadosAcc.map(d => d.idade);
+  const meta    = rc.meta;
+
+  if(mainChart) mainChart.destroy();
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const gradC = ctx.createLinearGradient(0,0,0,400);
+  gradC.addColorStop(0,'rgba(96,165,250,.15)'); gradC.addColorStop(1,'rgba(96,165,250,0)');
+
+  mainChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: allAges.map(a => a+' anos'),
+      datasets:[
+        { label:'Conservador',  data:rc.dadosAcc.map(d=>d.patrimonio), borderColor:'#60a5fa', backgroundColor:gradC,                        borderWidth:2.5, pointRadius:0, pointHoverRadius:5, fill:true,  tension:.4 },
+        { label:'Intermediário',data:ri.dadosAcc.map(d=>d.patrimonio), borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,.06)',         borderWidth:2.5, pointRadius:0, pointHoverRadius:5, fill:false, tension:.4 },
+        { label:'Arrojado',     data:ra.dadosAcc.map(d=>d.patrimonio), borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.06)',         borderWidth:2.5, pointRadius:0, pointHoverRadius:5, fill:false, tension:.4 },
+        { label:'Meta',         data:Array(allAges.length).fill(meta),  borderColor:'#fbbf24', borderWidth:1.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0 },
+      ]
+    },
+    options:{
+      responsive:true, animation:{duration:600},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#0f1117', borderColor:'#2a2d3e', borderWidth:1,
+          titleColor:'#8a8fa8', bodyColor:'#e0e0e0', padding:12,
+          callbacks:{
+            title: items => 'Idade: ' + items[0].label,
+            label: item => `  ${item.dataset.label}: ${fRk(item.raw)}`
+          }
+        }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,.03)'}, ticks:{color:'#6b7194',maxTicksLimit:12} },
+        y:{ grid:{color:'rgba(255,255,255,.03)'}, ticks:{color:'#6b7194',callback:v=>fRk(v)} }
+      }
+    }
+  });
+}
+
+function renderTabela(tab) {
+  const r = resultados[tab]; if(!r) return;
+  const { pmt, meta, dadosAcc, dadosRet, idAtual, idApos, idVida, anoAcc, anoRet, txRet, taxa, rendaMeta, totalInvestido } = r;
+  const cores = {cons:'#60a5fa', intr:'#4ade80', arro:'#f97316'};
+  const nomes = {cons:'🛡️ Conservador', intr:'⚖️ Intermediário', arro:'🚀 Arrojado'};
+  const cor = cores[tab];
+
+  let html = `<div style="margin-bottom:14px;font-size:12px;color:${cor};font-weight:700;">${nomes[tab]} &nbsp;·&nbsp; ${taxa}% a.a. &nbsp;·&nbsp; Aporte necessário: <span style="font-size:15px">${fR(pmt)}/mês</span></div>`;
+
+  // Acumulação
+  html += `<div style="background:rgba(167,139,250,.1);border-left:3px solid #a78bfa;border-radius:4px;padding:8px 12px;font-size:11px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">📈 Fase 1 — Acumulação &nbsp;|&nbsp; ${idAtual} a ${idApos} anos &nbsp;(${anoAcc} anos · aporte de ${fR(pmt)}/mês)</div>`;
+  html += `<table class="ev-table"><thead><tr>
+    <th>Idade</th><th>Fase</th><th>Aporte Mensal</th><th>Total Aportado</th><th>Juros Gerados</th><th>Patrimônio</th><th>% da Meta</th>
+  </tr></thead><tbody>`;
+
+  const maxPat = meta * 1.1;
+  dadosAcc.forEach((d,i) => {
+    const isApex = i === dadosAcc.length - 1;
+    const pctMeta = (d.patrimonio / meta * 100).toFixed(1);
+    const juros = d.patrimonio - d.totalInvestido;
+    const corPct = d.patrimonio >= meta ? '#4ade80' : '#6b7194';
+    html += `<tr class="${isApex?'row-apex':'row-acc'}">
+      <td><strong>${d.idade}</strong></td>
+      <td><span class="pill" style="background:rgba(167,139,250,.2);color:#a78bfa;">Acumulação</span></td>
+      <td style="color:${cor}">${fR(pmt)}/mês</td>
+      <td>${fR(d.totalInvestido)}</td>
+      <td style="color:${juros>=0?'#4ade80':'#f87171'}">${fR(juros)}</td>
+      <td><strong>${fR(d.patrimonio)}</strong></td>
+      <td style="color:${corPct};font-weight:700">${pctMeta}% <span style="font-size:9px;color:var(--muted2)">/ meta ${fRk(meta)}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  // Retirada
+  html += `<div style="background:rgba(74,222,128,.1);border-left:3px solid #4ade80;border-radius:4px;padding:8px 12px;font-size:11px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;margin-top:10px;">🏖️ Fase 2 — Aposentadoria &nbsp;|&nbsp; ${idApos} a ${idVida} anos &nbsp;(${anoRet} anos · retirada ${txRet}%/a)</div>`;
+  html += `<table class="ev-table"><thead><tr>
+    <th>Idade</th><th>Fase</th><th>Patrimônio Início</th><th>Renda Mensal</th><th>Retirada Anual</th><th>Total Retirado</th><th>Patrimônio Fim</th>
+  </tr></thead><tbody>`;
+
+  dadosRet.forEach((d,i) => {
+    const isLast = i === dadosRet.length - 1;
+    const retAnual = d.rendaMensal * 12;
+    const proxPat  = i < dadosRet.length-1 ? dadosRet[i+1].patrimonioInicio : d.patrimonioInicio;
+    html += `<tr class="${isLast?'row-apex':''}">
+      <td><strong>${d.idade}</strong></td>
+      <td><span class="pill" style="background:rgba(74,222,128,.2);color:#4ade80;">Aposentado</span></td>
+      <td>${fR(d.patrimonioInicio)}</td>
+      <td style="color:#4ade80"><strong>${fR(d.rendaMensal)}/mês</strong></td>
+      <td style="color:#f97316">${fR(retAnual)}</td>
+      <td style="color:var(--muted)">${fR(d.totalRetirado)}</td>
+      <td style="${proxPat<=0?'color:#f87171;font-weight:700':proxPat<meta*0.3?'color:#fbbf24':''}">${proxPat<=0?'⚠️ Esgotado':fR(proxPat)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  html += `<div class="note" style="padding-top:10px">Patrimônio necessário: ${fR(meta)} = R$ ${rendaMeta.toLocaleString('pt-BR')}/mês ÷ ${txRet}% a.a. &nbsp;·&nbsp; Total a investir: ${fR(totalInvestido)}</div>`;
+  document.getElementById('tabelaContainer').innerHTML = html;
+}
+
+// ── PERSISTÊNCIA ───────────────────────────────────
+function salvarInputs() {
+  const vals = {}; INPUT_IDS.forEach(id => { const el=document.getElementById(id); if(el) vals[id]=el.value; });
+  vals._tab = activeTab;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(vals)); } catch(e) {}
+}
+function restaurarInputs() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if(!s) return false;
+    INPUT_IDS.forEach(id => { const el=document.getElementById(id); if(el&&s[id]!==undefined) el.value=s[id]; });
+    if(s._tab) setActiveTab(s._tab);
+    return true;
+  } catch(e) { return false; }
+}
+
+restaurarInputs();
+calcularTodos();
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador de Juros Compostos — Consultoria Alex Fernando</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f1117;--s1:#1a1d2e;--s2:#141620;--border:#2a2d3e;
+  --text:#e0e0e0;--muted:#6b7194;--muted2:#3d4166;
+  --blue:#60a5fa;--green:#4ade80;--orange:#f97316;--purple:#a78bfa;--gold:#fbbf24;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh;padding:28px 24px;}
+.wrap{max-width:980px;margin:0 auto;}
+
+/* HEADER */
+.header{display:flex;align-items:center;gap:14px;margin-bottom:26px;}
+.header-icon{width:44px;height:44px;background:linear-gradient(135deg,#3a5fd9,#a78bfa);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.header h1{font-size:20px;font-weight:700;color:#fff;}
+.header p{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* INPUTS */
+.inputs-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:18px;}
+.inputs-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:18px;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fg label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.input-wrap{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--s2);transition:border-color .15s;}
+.input-wrap:focus-within{border-color:#3a5fd9;}
+.prefix{padding:0 12px;background:rgba(58,95,217,.12);color:var(--blue);font-size:12px;font-weight:600;display:flex;align-items:center;border-right:1px solid var(--border);white-space:nowrap;}
+.input-wrap input{background:transparent;border:none;color:#fff;font-size:15px;font-weight:600;padding:10px 12px;width:100%;outline:none;}
+.input-wrap input::-webkit-inner-spin-button{display:none;}
+.input-wrap select{background:var(--s2);border:none;border-left:1px solid var(--border);color:var(--muted);font-size:12px;padding:0 8px;outline:none;cursor:pointer;}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;}
+.btn{padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;letter-spacing:.3px;}
+.btn-calc{background:#3a5fd9;color:#fff;}.btn-calc:hover{background:#4a6fe9;}
+.btn-clear{background:var(--s2);border:1px solid var(--border);color:var(--muted);}.btn-clear:hover{color:var(--text);}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#3a5fd9);}
+.card-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.card-value{font-size:20px;font-weight:700;color:#fff;line-height:1.2;}
+.card-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--s2);padding:4px;border-radius:10px;width:fit-content;}
+.tab{padding:7px 18px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:transparent;transition:all .15s;}
+.tab.active{background:var(--s1);color:#fff;border:1px solid var(--border);}
+
+/* CHART BOX */
+.chart-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;}
+.chart-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.chart-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;}
+.legend{display:flex;gap:16px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:50%;}
+.leg-line{width:20px;height:2px;border-radius:1px;}
+
+/* CENÁRIOS */
+.cenarios-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;}
+.cen-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;}
+.cen-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+.cen-card{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.cen-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.cen-dot{width:10px;height:10px;border-radius:50%;}
+.cen-label{font-size:12px;font-weight:600;}
+.cen-input{display:flex;align-items:center;gap:6px;background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:6px;}
+.cen-input span{font-size:11px;color:var(--muted);}
+.cen-input input{background:transparent;border:none;color:#fff;font-size:14px;font-weight:700;width:100%;outline:none;}
+.cen-input input::-webkit-inner-spin-button{display:none;}
+.cen-result{font-size:11px;color:var(--muted);}
+.cen-result strong{color:#fff;font-size:13px;}
+
+/* TABLE */
+.table-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px;}
+.ev-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ev-table th{text-align:right;padding:7px 12px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+.ev-table th:first-child{text-align:left;}
+.ev-table td{padding:9px 12px;text-align:right;border-bottom:1px solid rgba(42,45,62,.4);}
+.ev-table td:first-child{text-align:left;color:var(--muted);}
+.ev-table tr:last-child td{border-bottom:none;}
+.ev-table tr:hover td{background:rgba(255,255,255,.02);}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;}
+.progress-fill{height:4px;background:var(--green);border-radius:2px;transition:width .4s;}
+
+/* FOOTER */
+.footer{text-align:center;font-size:11px;color:var(--muted2);padding:12px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-icon">📈</div>
+    <div>
+      <h1>Simulador de Juros Compostos</h1>
+      <p>Consultoria Alex Fernando · Visualize o poder dos juros compostos</p>
+    </div>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="inputs-box">
+    <div class="inputs-grid">
+      <div class="fg">
+        <label>Valor Inicial</label>
+        <div class="input-wrap">
+          <div class="prefix">R$</div>
+          <input type="number" id="vInicial" placeholder="0" value="10000" oninput="calc()">
+        </div>
+      </div>
+      <div class="fg">
+        <label>Taxa de Juros</label>
+        <div class="input-wrap">
+          <div class="prefix">%</div>
+          <input type="number" id="taxa" placeholder="0,00" value="12" step="0.01" oninput="calc()">
+          <select id="freqTaxa" onchange="calc()">
+            <option value="anual">Anual</option>
+            <option value="mensal">Mensal</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Período</label>
+        <div class="input-wrap">
+          <input type="number" id="periodo" placeholder="0" value="10" oninput="calc()">
+          <select id="freqPeriodo" onchange="calc()">
+            <option value="anos">Anos</option>
+            <option value="meses">Meses</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Aporte Mensal</label>
+        <div class="input-wrap">
+          <div class="prefix">R$</div>
+          <input type="number" id="aporte" placeholder="0" value="500" oninput="calc()">
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-clear" onclick="limpar()">↺ Limpar</button>
+      <button class="btn btn-calc" onclick="calc()">Calcular ▶</button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="cards">
+    <div class="card" style="--accent:#4ade80">
+      <div class="card-label">Valor Final</div>
+      <div class="card-value" id="kValFinal">—</div>
+      <div class="card-sub" id="kValFinalSub"></div>
+    </div>
+    <div class="card" style="--accent:#60a5fa">
+      <div class="card-label">Total Investido</div>
+      <div class="card-value" id="kInvestido">—</div>
+      <div class="card-sub" id="kInvestidoSub"></div>
+    </div>
+    <div class="card" style="--accent:#f97316">
+      <div class="card-label">Rendimento Gerado</div>
+      <div class="card-value" id="kRendimento">—</div>
+      <div class="card-sub" id="kRendimentoSub"></div>
+    </div>
+    <div class="card" style="--accent:#a78bfa">
+      <div class="card-label">Multiplicador</div>
+      <div class="card-value" id="kMulti">—</div>
+      <div class="card-sub" id="kMultiSub"></div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" id="tab1" onclick="showTab(1)">📈 Evolução</button>
+    <button class="tab" id="tab2" onclick="showTab(2)">⚖️ Comparar Cenários</button>
+    <button class="tab" id="tab3" onclick="showTab(3)">📋 Tabela Anual</button>
+  </div>
+
+  <!-- TAB 1: GRÁFICO EVOLUÇÃO -->
+  <div id="view1">
+    <div class="chart-box">
+      <div class="chart-hd">
+        <div class="chart-title">Crescimento do Patrimônio ao Longo do Tempo</div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Valor Total</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div>Total Investido</div>
+          <div class="leg-item"><div class="leg-dot" style="background:rgba(249,115,22,.4)"></div>Juros Compostos</div>
+        </div>
+      </div>
+      <canvas id="chartEvolucao" height="280"></canvas>
+    </div>
+  </div>
+
+  <!-- TAB 2: CENÁRIOS -->
+  <div id="view2" style="display:none">
+    <div class="cenarios-box">
+      <div class="cen-title">Comparativo de Cenários — mesmo período e aportes</div>
+      <div class="cen-grid">
+        <div class="cen-card">
+          <div class="cen-card-hd"><div class="cen-dot" style="background:#60a5fa"></div><div class="cen-label" style="color:#60a5fa">Conservador</div></div>
+          <div class="cen-input"><span>%/a</span><input type="number" id="cTaxa1" value="10" step="0.1" oninput="calcCenarios()"></div>
+          <div class="cen-result">Valor final: <strong id="cRes1">—</strong></div>
+        </div>
+        <div class="cen-card">
+          <div class="cen-card-hd"><div class="cen-dot" style="background:#4ade80"></div><div class="cen-label" style="color:#4ade80">Moderado</div></div>
+          <div class="cen-input"><span>%/a</span><input type="number" id="cTaxa2" value="12" step="0.1" oninput="calcCenarios()"></div>
+          <div class="cen-result">Valor final: <strong id="cRes2">—</strong></div>
+        </div>
+        <div class="cen-card">
+          <div class="cen-card-hd"><div class="cen-dot" style="background:#f97316"></div><div class="cen-label" style="color:#f97316">Arrojado</div></div>
+          <div class="cen-input"><span>%/a</span><input type="number" id="cTaxa3" value="15" step="0.1" oninput="calcCenarios()"></div>
+          <div class="cen-result">Valor final: <strong id="cRes3">—</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-hd">
+        <div class="chart-title">Comparativo dos 3 Cenários</div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div>Conservador</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#4ade80"></div>Moderado</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div>Arrojado</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#4b5563"></div>Investido</div>
+        </div>
+      </div>
+      <canvas id="chartCenarios" height="280"></canvas>
+    </div>
+  </div>
+
+  <!-- TAB 3: TABELA -->
+  <div id="view3" style="display:none">
+    <div class="table-box">
+      <div class="chart-hd" style="margin-bottom:14px">
+        <div class="chart-title">Evolução Anual do Patrimônio</div>
+      </div>
+      <table class="ev-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Aportado</th>
+            <th>Juros Acum.</th>
+            <th>Valor Total</th>
+            <th>Rendimento %</th>
+            <th style="width:120px">Progresso</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">Simulação para fins educacionais · Os valores são aproximados e não incluem impostos · Consultoria Alex Fernando</div>
+</div>
+
+<script>
+// ══ CHARTS ══
+let chartEv = null, chartCen = null;
+
+const fR = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fRk = v => { if(v>=1e6) return 'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M'; if(v>=1e3) return 'R$ '+(v/1e3).toFixed(1).replace('.',',')+'k'; return fR(v); };
+
+// Converte taxa para mensal
+function toMonthly(taxa, freq) {
+  const t = +taxa / 100;
+  return freq === 'mensal' ? t : Math.pow(1 + t, 1/12) - 1;
+}
+
+// Gera série temporal mês a mês
+function calcSerie(vi, taxaMensal, meses, aporteMensal) {
+  const serie = [];
+  let val = +vi;
+  for (let m = 0; m <= meses; m++) {
+    serie.push(val);
+    if (m < meses) val = val * (1 + taxaMensal) + +aporteMensal;
+  }
+  return serie;
+}
+
+function calcInvestidoSerie(vi, aporte, meses) {
+  return Array.from({length: meses+1}, (_, i) => +vi + +aporte * i);
+}
+
+// ══ CÁLCULO PRINCIPAL ══
+function calc() {
+  const vi = +document.getElementById('vInicial').value || 0;
+  const taxa = +document.getElementById('taxa').value || 0;
+  const freqT = document.getElementById('freqTaxa').value;
+  const periodo = +document.getElementById('periodo').value || 0;
+  const freqP = document.getElementById('freqPeriodo').value;
+  const aporte = +document.getElementById('aporte').value || 0;
+
+  const meses = freqP === 'anos' ? periodo * 12 : periodo;
+  const mr = toMonthly(taxa, freqT);
+
+  const serie = calcSerie(vi, mr, meses, aporte);
+  const investidoSerie = calcInvestidoSerie(vi, aporte, meses);
+
+  const vFinal = serie[meses];
+  const totalInv = vi + aporte * meses;
+  const rendimento = vFinal - totalInv;
+  const multi = totalInv > 0 ? vFinal / totalInv : 1;
+
+  // CARDS
+  document.getElementById('kValFinal').textContent = fR(vFinal);
+  document.getElementById('kValFinalSub').textContent = `Em ${periodo} ${freqP}`;
+  document.getElementById('kInvestido').textContent = fR(totalInv);
+  document.getElementById('kInvestidoSub').textContent = `Inicial + ${periodo * (freqP==='anos'?12:1)} aportes`;
+  document.getElementById('kRendimento').textContent = fR(rendimento);
+  document.getElementById('kRendimentoSub').textContent = `${((rendimento/totalInv)*100).toFixed(1)}% sobre investido`;
+  document.getElementById('kMulti').textContent = `${multi.toFixed(2)}×`;
+  document.getElementById('kMultiSub').textContent = `Cada R$1 virou R$${multi.toFixed(2)}`;
+
+  // LABELS
+  const step = meses <= 60 ? 1 : meses <= 120 ? 3 : 6;
+  const labels = serie.map((_,i) => {
+    if(i % step !== 0 && i !== meses) return '';
+    if(freqP === 'anos') return i % 12 === 0 ? `${i/12}a` : '';
+    return `${i}m`;
+  });
+  const cleanLabels = Array.from({length:meses+1},(_,i)=>{
+    if(freqP==='anos'){ return i%12===0?`Ano ${i/12}`:'';}
+    return `Mês ${i}`;
+  });
+
+  // CHART
+  renderChartEv(cleanLabels, serie, investidoSerie);
+  renderTabela(vi, mr, meses, aporte, freqP);
+  calcCenarios();
+}
+
+function renderChartEv(labels, serie, investidoSerie) {
+  if(chartEv) chartEv.destroy();
+  const ctx = document.getElementById('chartEvolucao').getContext('2d');
+  const step = Math.max(1, Math.floor(labels.length / 20));
+  const filteredLabels = labels.filter((_,i)=>i%step===0||i===labels.length-1);
+  const filteredSerie  = serie.filter((_,i)=>i%step===0||i===serie.length-1);
+  const filteredInv    = investidoSerie.filter((_,i)=>i%step===0||i===investidoSerie.length-1);
+  const juros          = filteredSerie.map((v,i)=>v-filteredInv[i]);
+
+  chartEv = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: filteredLabels,
+      datasets: [
+        { label:'Valor Total', data:filteredSerie, borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,.12)', borderWidth:2.5, pointRadius:0, pointHoverRadius:5, fill:true, tension:.4, order:1 },
+        { label:'Total Investido', data:filteredInv, borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.08)', borderWidth:2, pointRadius:0, pointHoverRadius:5, fill:true, tension:.1, order:2 },
+      ]
+    },
+    options: {
+      responsive:true, animation:{duration:400},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#0f1117', borderColor:'#2a2d3e', borderWidth:1,
+          callbacks:{
+            label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`,
+            afterBody: items => {
+              const total=items[0].raw, inv=items[1]?.raw||0;
+              return [`  Juros: ${fR(total-inv)}`];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',maxTicksLimit:12}},
+        y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>fRk(v)}}
+      }
+    }
+  });
+}
+
+// ══ CENÁRIOS ══
+function calcCenarios() {
+  const vi = +document.getElementById('vInicial').value || 0;
+  const periodo = +document.getElementById('periodo').value || 0;
+  const freqP = document.getElementById('freqPeriodo').value;
+  const aporte = +document.getElementById('aporte').value || 0;
+  const meses = freqP === 'anos' ? periodo * 12 : periodo;
+
+  const taxas = [
+    +document.getElementById('cTaxa1').value || 0,
+    +document.getElementById('cTaxa2').value || 0,
+    +document.getElementById('cTaxa3').value || 0,
+  ];
+  const cores = ['#60a5fa','#4ade80','#f97316'];
+  const resultIds = ['cRes1','cRes2','cRes3'];
+
+  const step = Math.max(1, Math.floor((meses+1)/24));
+  const idxs = Array.from({length:meses+1},(_,i)=>i).filter(i=>i%step===0||i===meses);
+
+  const labels = idxs.map(i => freqP==='anos' && i%12===0 ? `Ano ${i/12}` : `M${i}`);
+  const investidoSerie = calcInvestidoSerie(vi, aporte, meses);
+  const invFiltered = idxs.map(i=>investidoSerie[i]);
+
+  const datasets = taxas.map((t,idx)=>{
+    const mr = toMonthly(t,'anual');
+    const s = calcSerie(vi, mr, meses, aporte);
+    const vf = s[meses];
+    document.getElementById(resultIds[idx]).textContent = fR(vf);
+    return {
+      label: ['Conservador','Moderado','Arrojado'][idx]+` (${t}%/a)`,
+      data: idxs.map(i=>s[i]),
+      borderColor: cores[idx], backgroundColor: cores[idx]+'18',
+      borderWidth: 2.5, pointRadius:0, pointHoverRadius:5, fill:false, tension:.4
+    };
+  });
+  datasets.push({
+    label:'Total Investido', data:invFiltered,
+    borderColor:'#4b5563', borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false, tension:0
+  });
+
+  if(chartCen) chartCen.destroy();
+  const ctx = document.getElementById('chartCenarios').getContext('2d');
+  chartCen = new Chart(ctx,{
+    type:'line', data:{labels, datasets},
+    options:{
+      responsive:true, animation:{duration:300},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',maxTicksLimit:12}},
+        y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>fRk(v)}}
+      }
+    }
+  });
+}
+
+// ══ TABELA ANUAL ══
+function renderTabela(vi, mr, meses, aporte, freqP) {
+  const tbody = document.getElementById('tabelaBody');
+  let rows = '', val = +vi, maxVal = 0;
+
+  // Pré-calcula máximo
+  let tmp = +vi;
+  for(let m=1;m<=meses;m++){ tmp=tmp*(1+mr)+(+aporte); }
+  maxVal = tmp;
+
+  val = +vi;
+  const anosMeses = freqP==='anos' ? Array.from({length:Math.ceil(meses/12)+1},(_,i)=>i*12).filter(m=>m<=meses) : Array.from({length:meses+1},(_,i)=>i);
+
+  anosMeses.forEach((m,idx)=>{
+    if(m===0){ rows+=`<tr><td>Início</td><td>${fR(vi)}</td><td>R$ 0,00</td><td>${fR(vi)}</td><td>—</td><td><div class="progress-bar"><div class="progress-fill" style="width:${(vi/maxVal*100).toFixed(1)}%"></div></div></td></tr>`; return; }
+    // Avança até mês m
+    let v2 = +vi;
+    for(let mm=1;mm<=m;mm++) v2=v2*(1+mr)+(+aporte);
+    const inv = +vi + +aporte * m;
+    const juros = v2 - inv;
+    const pct = inv>0?((juros/inv)*100).toFixed(1):'0';
+    const label = freqP==='anos' ? `Ano ${m/12}` : `Mês ${m}`;
+    rows+=`<tr>
+      <td>${label}</td>
+      <td>${fR(inv)}</td>
+      <td style="color:#4ade80">${fR(juros)}</td>
+      <td style="font-weight:700">${fR(v2)}</td>
+      <td style="color:#a78bfa">${pct}%</td>
+      <td><div class="progress-bar"><div class="progress-fill" style="width:${(v2/maxVal*100).toFixed(1)}%"></div></div></td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows;
+}
+
+// ══ TABS ══
+function showTab(n) {
+  [1,2,3].forEach(i=>{
+    document.getElementById(`view${i}`).style.display = i===n?'block':'none';
+    document.getElementById(`tab${i}`).classList.toggle('active', i===n);
+  });
+}
+
+function limpar() {
+  document.getElementById('vInicial').value = 0;
+  document.getElementById('taxa').value = 0;
+  document.getElementById('periodo').value = 0;
+  document.getElementById('aporte').value = 0;
+  ['kValFinal','kInvestido','kRendimento','kMulti'].forEach(id=>document.getElementById(id).textContent='—');
+  ['kValFinalSub','kInvestidoSub','kRendimentoSub','kMultiSub'].forEach(id=>document.getElementById(id).textContent='');
+  if(chartEv){chartEv.destroy();chartEv=null;}
+  if(chartCen){chartCen.destroy();chartCen=null;}
+  document.getElementById('tabelaBody').innerHTML='';
+}
+
+// INIT
+calc();
+</script>
+</body>
+</html>

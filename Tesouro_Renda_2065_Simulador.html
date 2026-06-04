@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador — Tesouro Renda+ 2065</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#0f1117; color:#e0e0e0;
+  font-family:'Segoe UI',Arial,sans-serif;
+  min-height:100vh; padding:28px 24px;
+}
+.container { max-width:960px; margin:0 auto; }
+
+/* HEADER */
+.header { margin-bottom:22px; }
+.header h1 { font-size:19px; font-weight:700; color:#fff; }
+.header p  { font-size:12px; color:#6b7194; margin-top:4px; }
+
+/* CONTROLS */
+.controls {
+  background:#1a1d2e; border:1px solid #2a2d3e;
+  border-radius:12px; padding:20px 24px; margin-bottom:20px;
+  display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr;
+  gap:20px; align-items:end;
+}
+.ctrl-group label {
+  display:block; font-size:11px; color:#6b7194;
+  text-transform:uppercase; letter-spacing:0.7px; margin-bottom:6px;
+}
+.ctrl-group .value-display {
+  font-size:18px; font-weight:700; color:#fff; margin-bottom:8px;
+}
+.ctrl-group .value-display span { font-size:12px; font-weight:400; color:#6b7194; }
+input[type=range] {
+  width:100%; -webkit-appearance:none; height:4px;
+  background:linear-gradient(to right,var(--fill,#3a5fd9) 0%,var(--fill,#3a5fd9) var(--pct,50%),#2a2d3e var(--pct,50%),#2a2d3e 100%);
+  border-radius:4px; outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:14px; height:14px;
+  background:#fff; border-radius:50%; border:2px solid #3a5fd9;
+  box-shadow:0 0 0 3px rgba(58,95,217,0.2);
+}
+.ctrl-val { display:flex; justify-content:space-between; font-size:10px; color:#3d4166; margin-top:4px; }
+
+.invest-input {
+  display:flex; align-items:center; gap:6px;
+  background:#0f1117; border:1px solid #2a2d3e; border-radius:8px;
+  padding:8px 12px; margin-bottom:8px;
+}
+.invest-input span { color:#6b7194; font-size:13px; white-space:nowrap; }
+.invest-input input[type=number] {
+  background:transparent; border:none; color:#fff;
+  font-size:16px; font-weight:700; width:100%; outline:none;
+}
+.invest-input input[type=number]::-webkit-inner-spin-button { display:none; }
+
+/* CHART */
+.chart-box {
+  background:#1a1d2e; border:1px solid #2a2d3e;
+  border-radius:12px; padding:22px 24px; margin-bottom:16px;
+}
+.chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.chart-title { font-size:11px; color:#6b7194; text-transform:uppercase; letter-spacing:0.8px; }
+.legend { display:flex; gap:20px; }
+.legend-item { display:flex; align-items:center; gap:7px; font-size:12px; color:#8a8fa8; }
+.leg-dot { width:10px; height:10px; border-radius:50%; }
+
+/* TABLE */
+.table-box {
+  background:#1a1d2e; border:1px solid #2a2d3e;
+  border-radius:12px; padding:18px 24px; margin-bottom:16px;
+  overflow-x:auto;
+}
+.table-title { font-size:11px; color:#6b7194; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { color:#6b7194; font-weight:500; text-align:right; padding:6px 12px; border-bottom:1px solid #2a2d3e; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+th:first-child { text-align:left; }
+td { padding:9px 12px; text-align:right; border-bottom:1px solid #1e2030; }
+td:first-child { text-align:left; color:#8a8fa8; }
+tr:last-child td { border-bottom:none; }
+.gain { font-size:11px; margin-left:4px; }
+.gain.pos { color:#4ade80; }
+.gain.neg { color:#f87171; }
+.highlight { background:rgba(58,95,217,0.08); }
+
+/* NOTE */
+.note {
+  background:#141620; border-left:3px solid #3a5fd9; border-radius:4px;
+  padding:10px 14px; font-size:11px; color:#6b7194; line-height:1.6;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Simulador — Tesouro Renda+ Aposentadoria Extra 2065</h1>
+    <p>Marcação a mercado · Ajuste os parâmetros e simule cenários em tempo real</p>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+
+    <div class="ctrl-group">
+      <label>Valor investido</label>
+      <div class="invest-input">
+        <span>R$</span>
+        <input type="number" id="investInput" value="10000" min="1000" max="1000000" step="1000">
+      </div>
+      <input type="range" id="investSlider" min="1000" max="500000" step="1000" value="10000"
+        style="--fill:#3a5fd9" oninput="syncInvest('slider')">
+      <div class="ctrl-val"><span>R$ 1k</span><span>R$ 500k</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Taxa IPCA+ contratada</label>
+      <div class="value-display" id="taxaDisplay">7,08 <span>% a.a.</span></div>
+      <input type="range" id="taxaSlider" min="300" max="900" step="1" value="708"
+        style="--fill:#a78bfa" oninput="update()">
+      <div class="ctrl-val"><span>3,00%</span><span>9,00%</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Horizonte <span id="h1label" style="color:#f97316">● 1</span></label>
+      <div class="value-display" id="h1Display">5 <span>anos</span></div>
+      <input type="range" id="h1Slider" min="1" max="25" step="1" value="5"
+        style="--fill:#f97316" oninput="update()">
+      <div class="ctrl-val"><span>1a</span><span>25a</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Horizonte <span id="h2label" style="color:#60a5fa">● 2</span></label>
+      <div class="value-display" id="h2Display">10 <span>anos</span></div>
+      <input type="range" id="h2Slider" min="1" max="25" step="1" value="10"
+        style="--fill:#60a5fa" oninput="update()">
+      <div class="ctrl-val"><span>1a</span><span>25a</span></div>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Horizonte <span id="h3label" style="color:#4ade80">● 3</span></label>
+      <div class="value-display" id="h3Display">15 <span>anos</span></div>
+      <input type="range" id="h3Slider" min="1" max="25" step="1" value="15"
+        style="--fill:#4ade80" oninput="update()">
+      <div class="ctrl-val"><span>1a</span><span>25a</span></div>
+    </div>
+
+  </div>
+
+  <!-- CHART -->
+  <div class="chart-box">
+    <div class="chart-header">
+      <div class="chart-title">Valor da carteira por cenário de Selic (eixo X = Selic caindo)</div>
+      <div class="legend">
+        <div class="legend-item"><div class="leg-dot" style="background:#4ade80"></div><span id="leg3">15 anos</span></div>
+        <div class="legend-item"><div class="leg-dot" style="background:#60a5fa"></div><span id="leg2">10 anos</span></div>
+        <div class="legend-item"><div class="leg-dot" style="background:#f97316"></div><span id="leg1">5 anos</span></div>
+      </div>
+    </div>
+    <canvas id="chart" height="300"></canvas>
+  </div>
+
+  <!-- SUMMARY TABLE -->
+  <div class="table-box">
+    <div class="table-title">Resumo por cenário</div>
+    <table id="summaryTable">
+      <thead>
+        <tr>
+          <th>Cenário Selic</th>
+          <th id="th1">5 anos</th>
+          <th id="th2">10 anos</th>
+          <th id="th3">15 anos</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong style="color:#a0a8cc">Como usar:</strong> Ajuste o valor investido, a taxa IPCA+ do título comprado e os horizontes de tempo. O gráfico mostra o que acontece com seu dinheiro se você vender naquele ano, dado o novo patamar de Selic. Simulação em termos reais (inflação já descontada). Não constitui recomendação de investimento.
+  </div>
+
+</div>
+
+<script>
+// ─── Constantes do título ───────────────────────────────────────────────
+const MONTHS_TO_START = 476;  // Mai/2026 → Dez/2065
+const N_PAYMENTS = 240;       // 20 anos de pagamentos mensais
+
+// Selic → taxa real IPCA+ (interpolação linear entre pontos de referência)
+const SELIC_PTS = [8, 10, 12, 13, 14.75];
+const REAL_PTS  = [3,  4,  5,  6,  7.08];
+function selicToReal(s) {
+  if (s <= SELIC_PTS[0]) return REAL_PTS[0] / 100;
+  if (s >= SELIC_PTS[SELIC_PTS.length-1]) return REAL_PTS[REAL_PTS.length-1] / 100;
+  for (let i = 0; i < SELIC_PTS.length-1; i++) {
+    if (s >= SELIC_PTS[i] && s <= SELIC_PTS[i+1]) {
+      const t = (s - SELIC_PTS[i]) / (SELIC_PTS[i+1] - SELIC_PTS[i]);
+      return (REAL_PTS[i] + t*(REAL_PTS[i+1]-REAL_PTS[i])) / 100;
+    }
+  }
+}
+
+// Preço do título dado taxa real e meses até início dos pagamentos
+function bondPrice(realYield, monthsToStart) {
+  const mr = Math.pow(1 + realYield, 1/12) - 1;
+  let pv = 0;
+  for (let i = 0; i < N_PAYMENTS; i++) {
+    pv += (1/N_PAYMENTS) / Math.pow(1 + mr, monthsToStart + i + 1);
+  }
+  return pv;
+}
+
+// Gera 40 pontos na escala de Selic (14.75% → 8%)
+const N = 40;
+const SELIC_RANGE = Array.from({length:N}, (_,i) => 14.75 - i*(14.75-8)/(N-1));
+const XAXIS_LABELS = SELIC_RANGE.map(s => s.toFixed(1)+'%');
+
+// ─── Formatação ──────────────────────────────────────────────────────────
+const fmtR = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+const fmtGain = (v, base) => {
+  const p = ((v/base - 1)*100).toFixed(0);
+  return p >= 0 ? `+${p}%` : `${p}%`;
+};
+
+// ─── Chart.js ────────────────────────────────────────────────────────────
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: XAXIS_LABELS,
+    datasets: [
+      makeDS('15 anos', '#4ade80', []),
+      makeDS('10 anos', '#60a5fa', []),
+      makeDS('5 anos',  '#f97316', []),
+      {
+        label:'Capital inicial', data:[], borderColor:'#374151',
+        borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false, tension:0
+      }
+    ]
+  },
+  options: {
+    responsive:true,
+    animation:{ duration:300 },
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ display:false },
+      tooltip:{
+        backgroundColor:'#0f1117', borderColor:'#2a2d3e', borderWidth:1,
+        titleColor:'#8a8fa8', bodyColor:'#e0e0e0', padding:12,
+        callbacks:{
+          title: items => 'Selic: ' + items[0].label,
+          label: item => {
+            if (item.dataset.label === 'Capital inicial') return null;
+            const inv = parseFloat(document.getElementById('investInput').value)||10000;
+            const g = fmtGain(item.raw, inv);
+            return `  ${item.dataset.label}: ${fmtR(item.raw)}  (${g})`;
+          }
+        }
+      }
+    },
+    scales:{
+      x:{
+        reverse:true,
+        title:{ display:true, text:'Taxa Selic (%)', color:'#6b7194', font:{size:12} },
+        grid:{ color:'rgba(255,255,255,0.03)' },
+        ticks:{ color:'#6b7194', maxTicksLimit:8 }
+      },
+      y:{
+        title:{ display:true, text:'Valor da carteira (R$)', color:'#6b7194', font:{size:12} },
+        grid:{ color:'rgba(255,255,255,0.03)' },
+        ticks:{ color:'#6b7194', callback: v => 'R$ '+(v/1000).toFixed(0)+'k' }
+      }
+    }
+  }
+});
+
+function makeDS(label, color, data) {
+  return {
+    label, data,
+    borderColor: color,
+    backgroundColor: color+'18',
+    borderWidth: 2.5,
+    pointRadius: 0, pointHoverRadius: 5,
+    fill: false, tension: 0.4
+  };
+}
+
+// ─── Core calculation ────────────────────────────────────────────────────
+function calcSeries(contractedRate, horizonYears, investment) {
+  const todayPrice = bondPrice(contractedRate, MONTHS_TO_START);
+  const units = investment / todayPrice;
+  const monthsElapsed = horizonYears * 12;
+  const remaining = MONTHS_TO_START - monthsElapsed;
+  return SELIC_RANGE.map(selic => {
+    const futureRate = selicToReal(selic);
+    return units * bondPrice(futureRate, remaining);
+  });
+}
+
+// ─── Summary table ───────────────────────────────────────────────────────
+const SELIC_SCENARIOS = [
+  {label:'Hoje (~14,75%)', selic:14.75},
+  {label:'Selic 13%',      selic:13},
+  {label:'Selic 12%',      selic:12},
+  {label:'Selic 10%',      selic:10},
+  {label:'Selic 8%',       selic:8},
+];
+
+function buildTable(cr, h1, h2, h3, inv) {
+  const todayPrice = bondPrice(cr, MONTHS_TO_START);
+  const units = inv / todayPrice;
+
+  const renderCell = (selic, hYears) => {
+    const futureRate = selicToReal(selic);
+    const remaining = MONTHS_TO_START - hYears*12;
+    const val = units * bondPrice(futureRate, remaining);
+    const g = fmtGain(val, inv);
+    const pos = val >= inv;
+    return `${fmtR(val)} <span class="gain ${pos?'pos':'neg'}">${g}</span>`;
+  };
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = SELIC_SCENARIOS.map((s,i) =>
+    `<tr ${i===0?'class="highlight"':''}>
+      <td>${s.label}</td>
+      <td>${renderCell(s.selic, h1)}</td>
+      <td>${renderCell(s.selic, h2)}</td>
+      <td>${renderCell(s.selic, h3)}</td>
+    </tr>`
+  ).join('');
+}
+
+// ─── Slider utility ──────────────────────────────────────────────────────
+function setPct(el, min, max, val) {
+  const pct = ((val-min)/(max-min)*100).toFixed(1)+'%';
+  el.style.setProperty('--pct', pct);
+}
+
+// ─── Main update ─────────────────────────────────────────────────────────
+function update() {
+  const inv = parseFloat(document.getElementById('investInput').value)||10000;
+  const taxa = parseInt(document.getElementById('taxaSlider').value)/10000;
+  const h1   = parseInt(document.getElementById('h1Slider').value);
+  const h2   = parseInt(document.getElementById('h2Slider').value);
+  const h3   = parseInt(document.getElementById('h3Slider').value);
+
+  // Displays
+  document.getElementById('taxaDisplay').innerHTML = (taxa*100).toFixed(2).replace('.',',') + ' <span>% a.a.</span>';
+  document.getElementById('h1Display').innerHTML = h1 + ' <span>anos</span>';
+  document.getElementById('h2Display').innerHTML = h2 + ' <span>anos</span>';
+  document.getElementById('h3Display').innerHTML = h3 + ' <span>anos</span>';
+
+  // Legend
+  document.getElementById('leg1').textContent = h1 + ' anos';
+  document.getElementById('leg2').textContent = h2 + ' anos';
+  document.getElementById('leg3').textContent = h3 + ' anos';
+  document.getElementById('th1').textContent = h1 + ' anos';
+  document.getElementById('th2').textContent = h2 + ' anos';
+  document.getElementById('th3').textContent = h3 + ' anos';
+
+  // Slider fill
+  setPct(document.getElementById('taxaSlider'), 300, 900, parseInt(document.getElementById('taxaSlider').value));
+  setPct(document.getElementById('h1Slider'), 1, 25, h1);
+  setPct(document.getElementById('h2Slider'), 1, 25, h2);
+  setPct(document.getElementById('h3Slider'), 1, 25, h3);
+  setPct(document.getElementById('investSlider'), 1000, 500000, Math.min(500000, inv));
+
+  // Dataset labels
+  chart.data.datasets[0].label = h3 + ' anos';
+  chart.data.datasets[1].label = h2 + ' anos';
+  chart.data.datasets[2].label = h1 + ' anos';
+
+  // Data
+  chart.data.datasets[0].data = calcSeries(taxa, h3, inv);
+  chart.data.datasets[1].data = calcSeries(taxa, h2, inv);
+  chart.data.datasets[2].data = calcSeries(taxa, h1, inv);
+  chart.data.datasets[3].data = Array(N).fill(inv);
+  chart.update();
+
+  // Table
+  buildTable(taxa, h1, h2, h3, inv);
+}
+
+// Sync invest input ↔ slider
+function syncInvest(from) {
+  const inp = document.getElementById('investInput');
+  const sld = document.getElementById('investSlider');
+  if (from === 'slider') {
+    inp.value = sld.value;
+  } else {
+    sld.value = Math.min(500000, Math.max(1000, inp.value));
+  }
+  update();
+}
+document.getElementById('investInput').addEventListener('input', () => syncInvest('input'));
+document.getElementById('taxaSlider').addEventListener('input', update);
+document.getElementById('h1Slider').addEventListener('input', update);
+document.getElementById('h2Slider').addEventListener('input', update);
+document.getElementById('h3Slider').addEventListener('input', update);
+
+// Init
+update();
+</script>
+</body>
+</html>

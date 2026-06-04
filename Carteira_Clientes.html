@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Carteira — Consultoria Alex Fernando</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0f1117;--surface:#1a1d2e;--surface2:#141620;--border:#2a2d3e;
+  --text:#e0e0e0;--muted:#6b7194;--muted2:#3d4166;
+  --variavel:#f97316;--fixo:#60a5fa;--titulos:#4ade80;--imoveis:#fbbf24;--reserva:#a78bfa;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;height:100vh;display:flex;overflow:hidden;}
+
+/* SIDEBAR */
+#sidebar{width:235px;min-width:235px;background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;}
+.brand{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.brand-av{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3a5fd9,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;margin-bottom:8px;}
+.brand-name{font-size:13px;font-weight:700;color:#fff;}
+.brand-sub{font-size:10px;color:var(--muted);}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:10px 8px;}
+.sidebar-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;padding:4px 8px 6px;}
+.client-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;}
+.client-item:hover{background:rgba(255,255,255,.05);}
+.client-item.active{background:rgba(58,95,217,.15);border:1px solid rgba(58,95,217,.3);}
+.client-av{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.client-info .client-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:148px;}
+.client-info .client-total{display:none;}
+.sb-btn{margin:10px 8px;padding:9px;background:rgba(58,95,217,.15);border:1px solid rgba(58,95,217,.3);border-radius:8px;color:#60a5fa;font-size:12px;font-weight:600;cursor:pointer;text-align:center;}
+.sb-btn:hover{background:rgba(58,95,217,.25);}
+
+/* MAIN */
+#main{flex:1;overflow-y:auto;height:100vh;}
+#emptyState{display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);}
+#emptyState .icon{font-size:44px;opacity:.3;}
+
+/* DASHBOARD */
+#dashboard{padding:24px 28px;display:none;}
+.dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;}
+.dash-title{font-size:21px;font-weight:700;color:#fff;}
+.dash-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.dash-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+.btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;}
+.btn-primary{background:#3a5fd9;color:#fff;}.btn-primary:hover{background:#4a6fe9;}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text);}.btn-secondary:hover{background:rgba(255,255,255,.05);}
+.btn-danger{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;}.btn-danger:hover{background:rgba(248,113,113,.25);}
+.btn-green{background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:var(--titulos);}.btn-green:hover{background:rgba(74,222,128,.25);}
+.btn-orange{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:var(--variavel);}.btn-orange:hover{background:rgba(249,115,22,.25);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+
+/* CARDS */
+.cards-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px 16px;}
+.card-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.card-value{font-size:19px;font-weight:700;color:#fff;line-height:1.2;}
+.card-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.card-badge{font-size:12px;font-weight:600;margin-top:4px;}
+.pos{color:#4ade80;}.neg{color:#f87171;}
+
+/* ALLOCATION */
+.alloc-row{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-bottom:20px;}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px;}
+.box-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.alloc-bar-row{margin-bottom:11px;}
+.alloc-bar-hd{display:flex;justify-content:space-between;margin-bottom:5px;}
+.alloc-bar-lbl{font-size:11px;font-weight:600;}
+.alloc-bar-val{font-size:10px;color:var(--muted);}
+.track{height:5px;background:var(--border);border-radius:3px;position:relative;}
+.fill{height:5px;border-radius:3px;transition:width .4s;}
+.tgt-line{position:absolute;top:-4px;width:2px;height:13px;background:rgba(255,255,255,.35);border-radius:1px;}
+
+/* TABLE */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-title{font-size:13px;font-weight:600;color:#fff;}
+.inv-table{width:100%;border-collapse:collapse;font-size:12px;}
+.inv-table th{text-align:left;padding:7px 10px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);font-weight:500;}
+.inv-table td{padding:10px 10px;border-bottom:1px solid rgba(42,45,62,.5);}
+.inv-table tbody tr{cursor:pointer;transition:background .1s;}
+.inv-table tbody tr:hover{background:rgba(255,255,255,.03);}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.b-variavel{background:rgba(249,115,22,.15);color:var(--variavel);}
+.b-fixo{background:rgba(96,165,250,.15);color:var(--fixo);}
+.b-titulos{background:rgba(74,222,128,.15);color:var(--titulos);}
+.b-imoveis{background:rgba(251,191,36,.15);color:var(--imoveis);}
+.b-reserva{background:rgba(167,139,250,.15);color:var(--reserva);}
+.inv-name{font-weight:600;color:#fff;font-size:13px;}
+.inv-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.empty-row{text-align:center;padding:36px;color:var(--muted);font-size:13px;}
+.warn{color:#fbbf24;font-size:10px;}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:520px;max-height:90vh;overflow-y:auto;padding:26px;}
+.modal-lg{width:700px;}
+.mhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.mtitle{font-size:16px;font-weight:700;color:#fff;}
+.mclose{background:none;border:none;color:var(--muted);font-size:19px;cursor:pointer;}
+.mclose:hover{color:var(--text);}
+.frow{display:grid;gap:12px;margin-bottom:12px;}
+.c2{grid-template-columns:1fr 1fr;}.c3{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.fc{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color .15s;}
+.fc:focus{border-color:#3a5fd9;}
+select.fc option{background:var(--surface);}
+.mfooter{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+
+/* ALLOC INPUTS */
+.alloc-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:4px;}
+.alloc-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px;text-align:center;}
+.alloc-box label{font-size:9px;color:var(--muted);display:block;margin-bottom:3px;}
+.alloc-box input{background:transparent;border:none;color:#fff;font-size:17px;font-weight:700;width:100%;text-align:center;outline:none;}
+.alloc-sum{font-size:11px;text-align:right;margin-top:5px;}
+
+/* DETAIL MODAL */
+.detail-kpis{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+.dkpi{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px;}
+.dkpi-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.dkpi-val{font-size:16px;font-weight:700;color:#fff;}
+.dkpi-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.chart-box{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:14px;}
+.chart-box-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+.upd-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.upd-row input{flex:1;}
+.hint{font-size:10px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-bottom:14px;}
+.div-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.div-table{width:100%;border-collapse:collapse;font-size:11px;}
+.div-table th{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:5px 8px;border-bottom:1px solid var(--border);}
+.div-table td{padding:7px 8px;border-bottom:1px solid rgba(42,45,62,.4);}
+.div-table tr:last-child td{border-bottom:none;}
+
+/* TD STATUS */
+#tdStatus{font-size:11px;color:var(--muted);padding:2px 0;}
+
+/* METAS MODAL */
+.meta-row{display:grid;grid-template-columns:160px 90px 1fr;gap:10px;align-items:center;margin-bottom:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;}
+.meta-cat-label{font-size:12px;font-weight:600;}
+.meta-pct-wrap{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--bg);transition:border-color .15s;}
+.meta-pct-wrap:focus-within{border-color:#3a5fd9;}
+.meta-pct-wrap input{background:transparent;border:none;color:#fff;font-size:17px;font-weight:700;padding:7px 8px;width:100%;outline:none;text-align:center;}
+.meta-pct-wrap input::-webkit-inner-spin-button{display:none;}
+.meta-pct-sfx{padding:0 8px;display:flex;align-items:center;font-size:12px;color:var(--muted);border-left:1px solid var(--border);}
+.meta-rval{font-size:11px;color:var(--muted);line-height:1.5;}
+.meta-rval strong{display:block;font-size:13px;font-weight:700;color:#fff;}
+.preset-row{display:flex;gap:6px;margin-bottom:16px;}
+.preset-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.preset-btn:hover{border-color:#3a5fd9;color:#fff;background:rgba(58,95,217,.15);}
+.box-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.btn-icon{padding:4px 10px;font-size:10px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brand">
+    <div class="brand-av">AF</div>
+    <div class="brand-name">Alex Fernando</div>
+    <div class="brand-sub">Consultoria de Investimentos</div>
+    <div id="syncStatus" style="margin-top:7px;font-size:10px;padding:3px 8px;border-radius:20px;display:inline-block;background:rgba(107,113,148,.2);color:var(--muted)">⏳ Carregando...</div>
+  </div>
+  <div class="sidebar-scroll">
+    <div class="sidebar-label">Clientes</div>
+    <div id="clientList"></div>
+  </div>
+  <div class="sb-btn" id="sbAddBtn">+ Novo Cliente</div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="emptyState">
+    <div class="icon">📊</div>
+    <p>Selecione um cliente ou adicione um novo</p>
+  </div>
+
+  <div id="dashboard">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title" id="dashName"></div>
+        <div class="dash-sub" id="dashSub"></div>
+      </div>
+      <div class="dash-actions">
+        <button class="btn btn-green btn-sm" id="btnUpdateTD" onclick="updateTD()">↻ Tesouro Direto</button>
+        <button class="btn btn-orange btn-sm" id="btnUpdateBrapi" onclick="updateBrapi()">↻ Ações / FIIs</button>
+        <button class="btn btn-primary" onclick="openAddInv()">+ Investimento</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditClient()">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteClient()">Excluir</button>
+      </div>
+    </div>
+    <div id="tdStatus"></div>
+
+    <!-- KPI CARDS -->
+    <div class="cards-row">
+      <div class="card"><div class="card-label">Capital Total</div><div class="card-value" id="cTotal"></div><div class="card-sub">Patrimônio registrado</div></div>
+      <div class="card"><div class="card-label">Reserva Emergência</div><div class="card-value" id="cReserva"></div><div class="card-sub" id="cReservaSub"></div></div>
+      <div class="card"><div class="card-label">Em Carteira</div><div class="card-value" id="cCarteira"></div><div class="card-sub" id="cCarteiraSub"></div></div>
+      <div class="card"><div class="card-label">Ganho / Perda</div><div class="card-value" id="cGanho"></div><div class="card-badge" id="cGanhoPct"></div></div>
+      <div class="card"><div class="card-label">Dividendos Recebidos</div><div class="card-value" id="cDivs"></div><div class="card-sub" id="cDivsSub"></div></div>
+    </div>
+
+    <!-- ALLOCATION -->
+    <div class="alloc-row">
+      <div class="box" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="box-title" style="align-self:flex-start">Alocação</div>
+        <canvas id="allocChart" width="168" height="168"></canvas>
+      </div>
+      <div class="box">
+        <div class="box-title-row">
+          <div class="box-title" style="margin-bottom:0">Distribuição vs. Meta</div>
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="openMetas()">✏️ Editar Metas</button>
+        </div>
+        <div id="allocBars"></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="sec-hd"><div class="sec-title">Investimentos</div></div>
+    <table class="inv-table">
+      <thead><tr>
+        <th>Investimento</th><th>Categoria</th><th>Data</th>
+        <th>Investido</th><th>Valor Atual</th><th>Rendimento</th><th>Dividendos</th><th></th>
+      </tr></thead>
+      <tbody id="invBody"></tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- MODAL: CLIENTE -->
+<div class="overlay" id="mClient">
+  <div class="modal">
+    <div class="mhd"><div class="mtitle" id="mClientTitle">Novo Cliente</div><button class="mclose" onclick="closeM('mClient')">✕</button></div>
+    <input type="hidden" id="eClientId">
+    <div class="frow"><div class="fg"><label>Nome</label><input class="fc" id="cName" placeholder="Ex: Helena Silva"></div></div>
+    <div class="frow c2">
+      <div class="fg"><label>Capital Total (R$)</label><input class="fc" id="cTotal" type="number" placeholder="1684011"></div>
+      <div class="fg"><label>Reserva de Emergência (R$)</label><input class="fc" id="cReservaI" type="number" placeholder="47476"></div>
+    </div>
+    <div class="fg">
+      <label>Meta de Alocação da Carteira (%)</label>
+      <div class="alloc-grid">
+        <div class="alloc-box"><label style="color:var(--variavel)">🟠 Variável</label><input id="aVar" type="number" value="2" min="0" max="100" oninput="chkAlloc()"><div style="font-size:9px;color:var(--muted)">%</div></div>
+        <div class="alloc-box"><label style="color:var(--fixo)">🔵 Fixa</label><input id="aFixo" type="number" value="20" min="0" max="100" oninput="chkAlloc()"><div style="font-size:9px;color:var(--muted)">%</div></div>
+        <div class="alloc-box"><label style="color:var(--titulos)">🟢 Títulos</label><input id="aTit" type="number" value="0" min="0" max="100" oninput="chkAlloc()"><div style="font-size:9px;color:var(--muted)">%</div></div>
+        <div class="alloc-box"><label style="color:var(--imoveis)">🟡 Imóveis</label><input id="aImo" type="number" value="78" min="0" max="100" oninput="chkAlloc()"><div style="font-size:9px;color:var(--muted)">%</div></div>
+      </div>
+      <div class="alloc-sum" id="allocMsg"></div>
+    </div>
+    <div class="frow" style="margin-top:10px"><div class="fg"><label>Observações</label><textarea class="fc" id="cNotes" rows="2" placeholder="Objetivos, perfil de risco..."></textarea></div></div>
+    <div class="mfooter">
+      <button class="btn btn-secondary" onclick="closeM('mClient')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClient()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: INVESTIMENTO -->
+<div class="overlay" id="mInv">
+  <div class="modal">
+    <div class="mhd"><div class="mtitle" id="mInvTitle">Registrar Investimento</div><button class="mclose" onclick="closeM('mInv')">✕</button></div>
+    <input type="hidden" id="eInvId">
+    <div class="frow c2">
+      <div class="fg"><label>Nome</label><input class="fc" id="iName" placeholder="Ex: KNCR11"></div>
+      <div class="fg"><label>Ticker (opcional)</label><input class="fc" id="iTicker" placeholder="Ex: KNCR11"></div>
+    </div>
+    <div class="frow c2">
+      <div class="fg"><label>Categoria</label>
+        <select class="fc" id="iCat" onchange="updSubcats()">
+          <option value="variavel">🟠 Renda Variável</option>
+          <option value="fixo">🔵 Renda Fixa</option>
+          <option value="titulos">🟢 Títulos Públicos</option>
+          <option value="imoveis">🟡 Imóveis</option>
+          <option value="reserva">🟣 Reserva Emergência</option>
+        </select>
+      </div>
+      <div class="fg"><label>Subcategoria</label><select class="fc" id="iSubcat"></select></div>
+    </div>
+    <div class="frow c2">
+      <div class="fg"><label>Data da Compra</label><input class="fc" id="iDate" type="date"></div>
+      <div class="fg"><label>Valor Investido (R$)</label><input class="fc" id="iAmt" type="number" placeholder="0" oninput="calcUnit()"></div>
+    </div>
+    <div class="frow c3">
+      <div class="fg"><label>Quantidade</label><input class="fc" id="iQty" type="number" placeholder="—" oninput="calcUnit()"></div>
+      <div class="fg"><label>Preço Unitário</label><input class="fc" id="iUnit" type="number" placeholder="—" style="opacity:.6" readonly></div>
+      <div class="fg"><label>Valor Atual (R$)</label><input class="fc" id="iCurr" type="number" placeholder="= investido"></div>
+    </div>
+    <div class="frow"><div class="fg"><label>Notas / Taxa / Vencimento</label><input class="fc" id="iNotes" placeholder="Ex: IPCA+7,08% · vence 15/12/2084"></div></div>
+    <div class="mfooter">
+      <button class="btn btn-secondary" onclick="closeM('mInv')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveInv()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: DIVIDENDO -->
+<div class="overlay" id="mDiv">
+  <div class="modal" style="width:420px">
+    <div class="mhd"><div class="mtitle">Registrar Rendimento / Dividendo</div><button class="mclose" onclick="closeM('mDiv')">✕</button></div>
+    <input type="hidden" id="eDivInvId">
+    <div class="frow c2">
+      <div class="fg"><label>Data</label><input class="fc" id="dDate" type="date"></div>
+      <div class="fg"><label>Valor Recebido (R$)</label><input class="fc" id="dAmt" type="number" placeholder="0,00"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Tipo</label>
+        <select class="fc" id="dType">
+          <option>Rendimento</option><option>Dividendo</option><option>JCP</option>
+          <option>Aluguel</option><option>Juros</option><option>Cupom</option><option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow"><div class="fg"><label>Observações</label><input class="fc" id="dNotes" placeholder="Ex: Rendimento Abril 2026"></div></div>
+    <div class="mfooter">
+      <button class="btn btn-secondary" onclick="closeM('mDiv')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDiv()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: DETALHE -->
+<div class="overlay" id="mDetail">
+  <div class="modal modal-lg">
+    <div class="mhd">
+      <div>
+        <div class="mtitle" id="dName"></div>
+        <div id="dBadge" style="margin-top:5px"></div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn btn-secondary btn-sm" onclick="openDivModal()">+ Rendimento</button>
+        <button class="btn btn-secondary btn-sm" onclick="editInv()">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteInv()">Excluir</button>
+        <button class="mclose" onclick="closeM('mDetail')">✕</button>
+      </div>
+    </div>
+
+    <div class="detail-kpis">
+      <div class="dkpi"><div class="dkpi-lbl">Total Investido</div><div class="dkpi-val" id="dInvested"></div><div class="dkpi-sub" id="dQty"></div></div>
+      <div class="dkpi"><div class="dkpi-lbl">Valor Atual</div><div class="dkpi-val" id="dCurrent"></div><div class="dkpi-sub" id="dCurrSub"></div></div>
+      <div class="dkpi"><div class="dkpi-lbl">Ganho / Perda</div><div class="dkpi-val" id="dGain"></div><div class="dkpi-sub" id="dGainSub"></div></div>
+      <div class="dkpi"><div class="dkpi-lbl">Dividendos Totais</div><div class="dkpi-val" id="dDivTotal"></div><div class="dkpi-sub" id="dDivYield"></div></div>
+    </div>
+
+    <!-- Atualizar valor -->
+    <div class="chart-box">
+      <div class="chart-box-title">Atualizar Valor Atual</div>
+      <div class="upd-row">
+        <input class="fc" id="newVal" type="number" placeholder="Novo valor atual (R$)">
+        <input class="fc" id="newValDate" type="date" style="width:155px">
+        <button class="btn btn-primary btn-sm" onclick="updPrice()">Atualizar</button>
+      </div>
+      <div class="hint">Cada atualização constrói o histórico de performance no gráfico abaixo.</div>
+    </div>
+
+    <!-- Gráfico performance -->
+    <div class="chart-box">
+      <div class="chart-box-title">Performance — Histórico de Valor</div>
+      <canvas id="perfChart" height="150"></canvas>
+    </div>
+
+    <!-- Dividendos -->
+    <div class="chart-box">
+      <div class="div-hd">
+        <div class="chart-box-title" style="margin-bottom:0">Rendimentos / Dividendos Recebidos</div>
+      </div>
+      <div id="divTableWrap"></div>
+    </div>
+
+    <div id="dNotes" style="font-size:11px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);"></div>
+  </div>
+</div>
+
+
+<!-- MODAL: METAS DE ALOCAÇÃO -->
+<div class="overlay" id="mMetas">
+  <div class="modal" style="width:580px">
+    <div class="mhd">
+      <div>
+        <div class="mtitle">🎯 Metas de Alocação</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px" id="metaClientInfo"></div>
+      </div>
+      <button class="mclose" onclick="closeM('mMetas')">✕</button>
+    </div>
+
+    <!-- Presets rápidos -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;">Perfil de alocação rápido</div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="applyPreset('conservador')">🛡️ Conservador</button>
+        <button class="preset-btn" onclick="applyPreset('moderado')">⚖️ Moderado</button>
+        <button class="preset-btn" onclick="applyPreset('arrojado')">🚀 Arrojado</button>
+        <button class="preset-btn" onclick="applyPreset('imoveis')">🏠 Foco Imóveis</button>
+      </div>
+    </div>
+
+    <!-- Cabeçalho -->
+    <div style="display:grid;grid-template-columns:160px 90px 1fr;gap:10px;padding:0 12px 6px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">
+      <div>Categoria</div><div style="text-align:center">Meta %</div><div>Valor alvo (calculado)</div>
+    </div>
+
+    <div id="metaRows"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin:6px 0 14px;padding:6px 12px;background:var(--surface2);border-radius:7px;">
+      <span style="font-size:12px;font-weight:700" id="metaMsg"></span>
+    </div>
+
+    <!-- Reserva de emergência -->
+    <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--muted);">
+      🟣 <strong style="color:#a78bfa">Reserva de Emergência</strong> — gerenciada separadamente via campo de capital do cliente
+      <span id="metaReservaInfo" style="margin-left:6px;"></span>
+    </div>
+
+    <!-- Estratégia -->
+    <div class="fg">
+      <label>Estratégia / Objetivo do Cliente</label>
+      <textarea class="fc" id="metaNotes" rows="3" placeholder="Ex: Foco em renda passiva, aposentadoria em 2040, perfil moderado, meta de R$ 20k/mês..."></textarea>
+    </div>
+
+    <div class="mfooter">
+      <button class="btn btn-secondary" onclick="closeM('mMetas')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMetas()">💾 Salvar Metas</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ══ CONFIG ══
+const BRAPI_KEY = 'uRQFoMMR936cyZaNR8kKZD';
+const STORAGE  = 'af_portfolio_v3';
+const SB_URL   = 'https://itgtqhwsjmanryfubmtq.supabase.co';
+const SB_KEY   = 'sb_publishable_d_ePGYsumcrCfhdDDFSvkg_DpUNCV2x';
+const SB_CHAVE = 'carteira_v3';
+
+// ══ DATA MODEL ══
+let state = { clients:[], activeId:null };
+let perfChart = null, allocChart = null, activeInvId = null;
+
+// ══ SYNC STATUS ══
+function setSyncStatus(type, msg){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const styles = {
+    ok:      'background:rgba(74,222,128,.15);color:#4ade80;',
+    offline: 'background:rgba(251,191,36,.15);color:#fbbf24;',
+    syncing: 'background:rgba(96,165,250,.15);color:#60a5fa;',
+    error:   'background:rgba(248,113,113,.15);color:#f87171;',
+    loading: 'background:rgba(107,113,148,.2);color:var(--muted);'
+  };
+  el.style.cssText = 'margin-top:7px;font-size:10px;padding:3px 8px;border-radius:20px;display:inline-block;' + (styles[type]||styles.loading);
+  el.textContent = msg;
+}
+
+// ══ SUPABASE ══
+async function sbLoad(){
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.${SB_CHAVE}&select=valor`, {
+      headers:{ 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY }
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const rows = await r.json();
+    if(rows && rows.length && rows[0].valor) return rows[0].valor;
+    return null;
+  } catch(e){
+    console.warn('[Supabase] Load error:', e);
+    return null;
+  }
+}
+
+async function sbSave(data){
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/configuracoes`, {
+      method: 'POST',
+      headers:{
+        'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ chave: SB_CHAVE, valor: data, updated_at: new Date().toISOString() })
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return true;
+  } catch(e){
+    console.warn('[Supabase] Save error:', e);
+    return false;
+  }
+}
+
+const SUBCATS = {
+  variavel:['Ação','FII','ETF','BDR','Outro'],
+  fixo:['CDB','LCI','LCA','LC','Debênture','CRI','CRA','Previdência Privada','Fundo de Investimento','Outro'],
+  titulos:['Tesouro Selic','Tesouro IPCA+','Tesouro Prefixado','Tesouro Renda+','Outro'],
+  imoveis:['Residencial','Comercial','Terreno / Terra','Rural','Outro'],
+  reserva:['CDB Liquidez Diária','Fundo DI','Conta Corrente','Poupança','Nubank','Outro']
+};
+const CAT = {
+  variavel:{label:'Renda Variável',color:'#f97316'},
+  fixo:{label:'Renda Fixa',color:'#60a5fa'},
+  titulos:{label:'Títulos Públicos',color:'#4ade80'},
+  imoveis:{label:'Imóveis',color:'#fbbf24'},
+  reserva:{label:'Reserva',color:'#a78bfa'}
+};
+const AVCOLORS=['#3a5fd9','#a78bfa','#4ade80','#f97316','#f472b6','#22d3ee','#fb7185','#34d399'];
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function save(){
+  localStorage.setItem(STORAGE, JSON.stringify(state));
+  setSyncStatus('syncing','⏳ Sincronizando...');
+  sbSave(state).then(ok=>{
+    if(ok) setSyncStatus('ok','✓ Salvo na nuvem');
+    else    setSyncStatus('offline','⚠️ Local only');
+    setTimeout(()=> setSyncStatus('ok','☁️ Sincronizado'), 3000);
+  });
+}
+function getC(){ return state.clients.find(c=>c.id===state.activeId); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fR(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fD(d){ if(!d) return '—'; const[y,m,da]=d.split('-'); return `${da}/${m}/${y}`; }
+function totDiv(inv){ return (inv.dividends||[]).reduce((s,d)=>s+(+d.amount||0),0); }
+
+// ══ RENDER ══
+function renderSidebar(){
+  const list = document.getElementById('clientList');
+  if(!state.clients.length){ list.innerHTML='<div style="padding:8px 8px;font-size:11px;color:var(--muted2);text-align:center">Nenhum cliente</div>'; return; }
+  list.innerHTML = state.clients.map((c,i)=>{
+    const init = c.name.split(' ').slice(0,2).map(w=>w[0].toUpperCase()).join('');
+    const col = AVCOLORS[i%AVCOLORS.length];
+    return `<div class="client-item${c.id===state.activeId?' active':''}" onclick="selClient('${c.id}')">
+      <div class="client-av" style="background:${col}">${init}</div>
+      <div class="client-info">
+        <div class="client-name">${c.name}</div>
+        <div class="client-total">${fR(c.totalCapital)}</div>
+      </div></div>`;
+  }).join('');
+}
+
+function renderDash(){
+  const c = getC();
+  if(!c){ document.getElementById('dashboard').style.display='none'; document.getElementById('emptyState').style.display='flex'; return; }
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+
+  document.getElementById('dashName').textContent = c.name;
+  document.getElementById('dashSub').textContent = `Cliente desde ${fD(c.createdAt)}${c.notes?' · '+c.notes:''}`;
+
+  const invs = c.investments||[];
+  const totInv  = invs.reduce((s,i)=>s+(+i.amountInvested||0),0);
+  const totCurr = invs.reduce((s,i)=>s+(+(i.currentValue??i.amountInvested)||0),0);
+  const totDivs = invs.reduce((s,i)=>s+totDiv(i),0);
+  const gain = totCurr - totInv;
+  const gainPct = totInv>0 ? gain/totInv*100 : 0;
+
+  document.getElementById('cTotal').textContent = fR(c.totalCapital);
+  document.getElementById('cReserva').textContent = fR(c.emergencyReserve||0);
+  document.getElementById('cReservaSub').textContent = c.totalCapital ? ((c.emergencyReserve/c.totalCapital)*100).toFixed(1)+'% do capital' : '';
+  document.getElementById('cCarteira').textContent = fR(totCurr);
+  document.getElementById('cCarteiraSub').textContent = totInv ? ((totInv/c.totalCapital)*100).toFixed(1)+'% alocado' : '';
+  const gEl = document.getElementById('cGanho');
+  gEl.textContent = fR(Math.abs(gain));
+  gEl.className = 'card-value '+(gain>=0?'pos':'neg');
+  const gpEl = document.getElementById('cGanhoPct');
+  gpEl.textContent = (gain>=0?'+':'-')+gainPct.toFixed(2)+'% sobre investido';
+  gpEl.className = 'card-badge '+(gain>=0?'pos':'neg');
+  document.getElementById('cDivs').textContent = fR(totDivs);
+  document.getElementById('cDivsSub').textContent = 'Total histórico recebido';
+
+  renderAllocChart(c,invs);
+  renderAllocBars(c,invs);
+  renderTable(invs);
+}
+
+function renderAllocChart(c,invs){
+  const vals = {variavel:0,fixo:0,titulos:0,imoveis:0,reserva:+(c.emergencyReserve||0)};
+  invs.forEach(i=>{ if(vals[i.category]!==undefined) vals[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
+  const keys = Object.keys(vals);
+  const data  = keys.map(k=>vals[k]);
+  const colors= keys.map(k=>CAT[k]?.color||'#888');
+  const labels= keys.map(k=>CAT[k]?.label||k);
+  if(allocChart) allocChart.destroy();
+  allocChart = new Chart(document.getElementById('allocChart'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors.map(c=>c+'bb'),borderColor:colors,borderWidth:2,hoverOffset:4}]},
+    options:{cutout:'68%',responsive:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>' '+fR(i.raw)}}}}
+  });
+}
+
+function renderAllocBars(c,invs){
+  const portfolio = Math.max(1,(+c.totalCapital||0)-(+c.emergencyReserve||0));
+  const tgt = c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
+  const act = {variavel:0,fixo:0,titulos:0,imoveis:0};
+  invs.forEach(i=>{ if(act[i.category]!==undefined) act[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
+
+  const resEm = +c.emergencyReserve||0;
+  const resPct = ((resEm/(+c.totalCapital||1))*100).toFixed(1);
+
+  let html = mkBar('🟣 Reserva de Emergência','reserva',resEm,null,resPct,null);
+  const EMOJIS = {variavel:'🟠',fixo:'🔵',titulos:'🟢',imoveis:'🟡'};
+  ['variavel','fixo','titulos','imoveis'].forEach(cat=>{
+    const t = tgt[cat]||0;
+    const a = act[cat]||0;
+    // Oculta categoria sem meta E sem investimentos
+    if(t === 0 && a === 0) return;
+    const aP = (a/portfolio*100);
+    html += mkBar(EMOJIS[cat]+' '+CAT[cat].label, cat, a, t>0?portfolio*t/100:null, aP, t>0?t:null);
+  });
+  document.getElementById('allocBars').innerHTML = html || '<div style="font-size:11px;color:var(--muted);padding:10px 0">Nenhuma categoria com meta ou investimento definido.</div>';
+}
+
+function mkBar(label,cat,actual,target,pct,tgtPct){
+  const color = CAT[cat]?.color||'#888';
+  const pctW = Math.min(100,pct).toFixed(1);
+  const tgtStr = target!=null ? ` <span style="color:var(--muted2)">/ meta ${fR(target)}</span> · ${(+pct).toFixed(1)}% <span style="color:var(--muted2)">(meta ${tgtPct}%)</span>` : `· ${pct}% do capital`;
+  return `<div class="alloc-bar-row">
+    <div class="alloc-bar-hd"><span class="alloc-bar-lbl" style="color:${color}">${label}</span><span class="alloc-bar-val">${fR(actual)}${tgtStr}</span></div>
+    <div class="track"><div class="fill" style="width:${pctW}%;background:${color}"></div>${tgtPct!=null?`<div class="tgt-line" style="left:${Math.min(100,tgtPct)}%"></div>`:''}</div>
+  </div>`;
+}
+
+function renderTable(invs){
+  const tbody = document.getElementById('invBody');
+  if(!invs.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty-row">Nenhum investimento. Clique em "+ Investimento".</td></tr>`; return; }
+  tbody.innerHTML = invs.map(inv=>{
+    const cur = +(inv.currentValue??inv.amountInvested)||0;
+    const inv2= +(inv.amountInvested)||0;
+    const gain= cur-inv2, gp= inv2>0?gain/inv2*100:0;
+    const gs  = (gain>=0?'+':'')+gp.toFixed(2)+'%';
+    const divs= totDiv(inv);
+    const warn= inv.notes&&inv.notes.includes('⚠️')?'<span class="warn"> ⚠️</span>':'';
+    return `<tr onclick="openDetail('${inv.id}')">
+      <td><div class="inv-name">${inv.name}${inv.ticker&&inv.ticker!==inv.name?` <span style="color:var(--muted);font-size:10px">${inv.ticker}</span>`:''}${warn}</div><div class="inv-sub">${inv.subcat||''}</div></td>
+      <td><span class="badge b-${inv.category}">${CAT[inv.category]?.label||inv.category}</span></td>
+      <td style="color:var(--muted);font-size:11px">${fD(inv.purchaseDate)}</td>
+      <td>${fR(inv2)}</td>
+      <td>${fR(cur)}</td>
+      <td class="${gain>=0?'pos':'neg'}">${gs}</td>
+      <td style="color:var(--titulos)">${divs>0?fR(divs):'—'}</td>
+      <td style="display:flex;gap:5px;align-items:center">
+        <button class="btn btn-secondary btn-sm" title="Ver detalhes" onclick="event.stopPropagation();openDetail('${inv.id}')">↗</button>
+        <button class="btn btn-danger btn-sm" title="Remover investimento" onclick="event.stopPropagation();quickDeleteInv('${inv.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ MODALS ══
+function openM(id){ document.getElementById(id).classList.add('open'); }
+function closeM(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o){ o.classList.remove('open'); } }));
+
+// ── CLIENT ──
+function chkAlloc(){
+  const s=(+document.getElementById('aVar').value||0)+(+document.getElementById('aFixo').value||0)+(+document.getElementById('aTit').value||0)+(+document.getElementById('aImo').value||0);
+  const el=document.getElementById('allocMsg');
+  el.textContent=`Soma: ${s}% ${s===100?'✓':'— deve somar 100%'}`;
+  el.style.color=s===100?'var(--titulos)':'var(--variavel)';
+}
+function openAddClient(){
+  document.getElementById('mClientTitle').textContent='Novo Cliente';
+  document.getElementById('eClientId').value='';
+  ['cName','cNotes'].forEach(i=>document.getElementById(i).value='');
+  ['cTotal','cReservaI'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('aVar').value=2; document.getElementById('aFixo').value=20;
+  document.getElementById('aTit').value=0; document.getElementById('aImo').value=78;
+  chkAlloc(); openM('mClient');
+}
+function openEditClient(){
+  const c=getC(); if(!c) return;
+  document.getElementById('mClientTitle').textContent='Editar Cliente';
+  document.getElementById('eClientId').value=c.id;
+  document.getElementById('cName').value=c.name;
+  document.getElementById('cTotal').value=c.totalCapital;
+  document.getElementById('cReservaI').value=c.emergencyReserve||0;
+  document.getElementById('cNotes').value=c.notes||'';
+  const t=c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
+  document.getElementById('aVar').value=t.variavel||0;
+  document.getElementById('aFixo').value=t.fixo||0;
+  document.getElementById('aTit').value=t.titulos||0;
+  document.getElementById('aImo').value=t.imoveis||0;
+  chkAlloc(); openM('mClient');
+}
+function saveClient(){
+  const name=document.getElementById('cName').value.trim();
+  if(!name){ alert('Informe o nome.'); return; }
+  const editId=document.getElementById('eClientId').value;
+  const data={
+    name, totalCapital:+document.getElementById('cTotal').value||0,
+    emergencyReserve:+document.getElementById('cReservaI').value||0,
+    notes:document.getElementById('cNotes').value.trim(),
+    allocationTargets:{variavel:+document.getElementById('aVar').value||0, fixo:+document.getElementById('aFixo').value||0, titulos:+document.getElementById('aTit').value||0, imoveis:+document.getElementById('aImo').value||0}
+  };
+  if(editId){ Object.assign(state.clients.find(c=>c.id===editId)||{},data); }
+  else { const nc={id:uid(),createdAt:today(),investments:[],...data}; state.clients.push(nc); state.activeId=nc.id; }
+  save(); closeM('mClient'); renderSidebar(); renderDash();
+}
+function selClient(id){ state.activeId=id; save(); renderSidebar(); renderDash(); }
+function deleteClient(){
+  const c=getC(); if(!c) return;
+  if(!confirm(`Excluir "${c.name}"?`)) return;
+  state.clients=state.clients.filter(x=>x.id!==c.id);
+  state.activeId=state.clients[0]?.id||null;
+  save(); renderSidebar(); renderDash();
+}
+
+// ── INVESTMENT ──
+function updSubcats(){
+  const cat=document.getElementById('iCat').value;
+  document.getElementById('iSubcat').innerHTML=(SUBCATS[cat]||[]).map(s=>`<option>${s}</option>`).join('');
+}
+function calcUnit(){
+  const q=+document.getElementById('iQty').value, a=+document.getElementById('iAmt').value;
+  document.getElementById('iUnit').value=(q&&a)?(a/q).toFixed(4):'';
+}
+function openAddInv(){
+  document.getElementById('mInvTitle').textContent='Registrar Investimento';
+  document.getElementById('eInvId').value='';
+  ['iName','iTicker','iAmt','iQty','iUnit','iCurr','iNotes'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('iDate').value=today();
+  document.getElementById('iCat').value='variavel';
+  updSubcats(); openM('mInv');
+}
+function saveInv(){
+  const c=getC(); if(!c) return;
+  const name=document.getElementById('iName').value.trim();
+  if(!name){ alert('Informe o nome.'); return; }
+  const amt=+document.getElementById('iAmt').value||0;
+  const curr=document.getElementById('iCurr').value!==''?+document.getElementById('iCurr').value:amt;
+  const editId=document.getElementById('eInvId').value;
+  const data={
+    name, ticker:document.getElementById('iTicker').value.trim().toUpperCase(),
+    category:document.getElementById('iCat').value, subcat:document.getElementById('iSubcat').value,
+    purchaseDate:document.getElementById('iDate').value, amountInvested:amt,
+    quantity:+document.getElementById('iQty').value||null, pricePerUnit:+document.getElementById('iUnit').value||null,
+    currentValue:curr, notes:document.getElementById('iNotes').value.trim(),
+  };
+  if(editId){
+    const inv=(c.investments||[]).find(i=>i.id===editId);
+    if(inv) Object.assign(inv,data);
+  } else {
+    c.investments=c.investments||[];
+    c.investments.push({id:uid(), dividends:[], priceHistory:[{date:data.purchaseDate,value:amt,note:'Compra inicial'}], ...data});
+  }
+  save(); closeM('mInv'); renderDash();
+}
+
+// ── DETAIL ──
+function openDetail(invId){
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
+  activeInvId=invId;
+
+  const cur=+(inv.currentValue??inv.amountInvested)||0;
+  const inv2=+(inv.amountInvested)||0;
+  const gain=cur-inv2, gp=inv2>0?gain/inv2*100:0;
+  const divs=totDiv(inv);
+
+  document.getElementById('dName').textContent=inv.name+(inv.ticker&&inv.ticker!==inv.name?' ('+inv.ticker+')':'');
+  document.getElementById('dBadge').innerHTML=`<span class="badge b-${inv.category}">${CAT[inv.category]?.label||inv.category}</span>${inv.subcat?` <span style="font-size:10px;color:var(--muted);margin-left:6px">${inv.subcat}</span>`:''}`;
+  document.getElementById('dInvested').textContent=fR(inv2);
+  document.getElementById('dQty').textContent=inv.quantity?`${inv.quantity} un. · ${fR(inv.pricePerUnit||0)}/un`:'';
+  document.getElementById('dCurrent').textContent=fR(cur);
+  document.getElementById('dCurrSub').textContent=`Compra: ${fD(inv.purchaseDate)}`;
+  const gEl=document.getElementById('dGain');
+  gEl.textContent=(gain>=0?'+':'')+gp.toFixed(2)+'%';
+  gEl.className='dkpi-val '+(gain>=0?'pos':'neg');
+  document.getElementById('dGainSub').textContent=(gain>=0?'+':'')+fR(Math.abs(gain));
+  document.getElementById('dDivTotal').textContent=fR(divs);
+  const dyield=inv2>0?(divs/inv2*100).toFixed(2):0;
+  document.getElementById('dDivYield').textContent=`Yield s/ custo: ${dyield}%`;
+  document.getElementById('newVal').value=''; document.getElementById('newValDate').value=today();
+  document.getElementById('dNotes').textContent=inv.notes?'📝 '+inv.notes:'';
+
+  renderPerfChart(inv);
+  renderDivTable(inv);
+  openM('mDetail');
+}
+
+function renderPerfChart(inv){
+  const hist=(inv.priceHistory||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const labels=hist.map(h=>fD(h.date));
+  const vals=hist.map(h=>h.value);
+  const inv2=+(inv.amountInvested)||0;
+  const color=CAT[inv.category]?.color||'#60a5fa';
+  if(perfChart) perfChart.destroy();
+  perfChart=new Chart(document.getElementById('perfChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Valor',data:vals,borderColor:color,backgroundColor:color+'22',borderWidth:2.5,pointRadius:4,pointHoverRadius:6,fill:true,tension:.3},
+      {label:'Investido',data:Array(labels.length).fill(inv2),borderColor:'#4b5563',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,animation:{duration:200},interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194'}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
+  });
+}
+
+function renderDivTable(inv){
+  const divs=(inv.dividends||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const wrap=document.getElementById('divTableWrap');
+  if(!divs.length){ wrap.innerHTML='<div style="text-align:center;padding:18px;font-size:12px;color:var(--muted)">Nenhum rendimento registrado. Clique em "+ Rendimento".</div>'; return; }
+  wrap.innerHTML=`<table class="div-table">
+    <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Notas</th><th></th></tr></thead>
+    <tbody>${divs.map(d=>`<tr>
+      <td>${fD(d.date)}</td><td>${d.type}</td>
+      <td style="color:var(--titulos)">${fR(d.amount)}</td>
+      <td style="color:var(--muted)">${d.notes||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteDiv('${d.id}')">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function updPrice(){
+  const c=getC(); const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  const v=+document.getElementById('newVal').value, d=document.getElementById('newValDate').value;
+  if(!v||!d){ alert('Informe valor e data.'); return; }
+  inv.currentValue=v;
+  inv.priceHistory=inv.priceHistory||[];
+  inv.priceHistory.push({date:d,value:v,note:'Atualização manual'});
+  save(); openDetail(activeInvId); renderDash();
+}
+function editInv(){
+  const c=getC(); const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  closeM('mDetail');
+  document.getElementById('mInvTitle').textContent='Editar Investimento';
+  document.getElementById('eInvId').value=inv.id;
+  document.getElementById('iName').value=inv.name;
+  document.getElementById('iTicker').value=inv.ticker||'';
+  document.getElementById('iCat').value=inv.category; updSubcats();
+  document.getElementById('iSubcat').value=inv.subcat||'';
+  document.getElementById('iDate').value=inv.purchaseDate||'';
+  document.getElementById('iAmt').value=inv.amountInvested||'';
+  document.getElementById('iQty').value=inv.quantity||'';
+  document.getElementById('iUnit').value=inv.pricePerUnit||'';
+  document.getElementById('iCurr').value=inv.currentValue||'';
+  document.getElementById('iNotes').value=inv.notes||'';
+  openM('mInv');
+}
+function deleteInv(){
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  if(!confirm(`Excluir "${inv.name}"?`)) return;
+  c.investments=c.investments.filter(i=>i.id!==activeInvId);
+  save(); closeM('mDetail'); renderDash();
+}
+function quickDeleteInv(invId){
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
+  if(!confirm(`Remover "${inv.name}" da carteira de ${c.name}?`)) return;
+  c.investments=c.investments.filter(i=>i.id!==invId);
+  save(); renderDash();
+}
+
+// ── DIVIDENDOS ──
+function openDivModal(){
+  document.getElementById('eDivInvId').value=activeInvId;
+  document.getElementById('dDate').value=today();
+  document.getElementById('dAmt').value='';
+  document.getElementById('dNotes').value='';
+  openM('mDiv');
+}
+function saveDiv(){
+  const c=getC(); const invId=document.getElementById('eDivInvId').value;
+  const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
+  const amt=+document.getElementById('dAmt').value;
+  if(!amt){ alert('Informe o valor.'); return; }
+  inv.dividends=inv.dividends||[];
+  inv.dividends.push({id:uid(), date:document.getElementById('dDate').value, amount:amt, type:document.getElementById('dType').value, notes:document.getElementById('dNotes').value.trim()});
+  save(); closeM('mDiv'); openDetail(invId); renderDash();
+}
+function deleteDiv(divId){
+  const c=getC(); const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  if(!confirm('Excluir este rendimento?')) return;
+  inv.dividends=inv.dividends.filter(d=>d.id!==divId);
+  save(); openDetail(activeInvId); renderDash();
+}
+
+// ══ METAS DE ALOCAÇÃO ══
+const META_CATS = [
+  {key:'variavel', label:'🟠 Renda Variável',   color:'#f97316'},
+  {key:'fixo',     label:'🔵 Renda Fixa',        color:'#60a5fa'},
+  {key:'titulos',  label:'🟢 Títulos Públicos',  color:'#4ade80'},
+  {key:'imoveis',  label:'🟡 Imóveis',            color:'#fbbf24'},
+];
+const PRESETS_META = {
+  conservador: {variavel:5,  fixo:55, titulos:30, imoveis:10},
+  moderado:    {variavel:20, fixo:40, titulos:25, imoveis:15},
+  arrojado:    {variavel:40, fixo:25, titulos:20, imoveis:15},
+  imoveis:     {variavel:5,  fixo:15, titulos:10, imoveis:70},
+};
+
+function openMetas(){
+  const c=getC(); if(!c) return;
+  const portfolio=(+c.totalCapital||0)-(+c.emergencyReserve||0);
+  const t=c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
+  const resEm=+c.emergencyReserve||0;
+  const resPct=c.totalCapital?(resEm/c.totalCapital*100).toFixed(1):0;
+
+  document.getElementById('metaClientInfo').textContent=
+    `Capital: ${fR(c.totalCapital)} · Carteira (sem reserva): ${fR(portfolio)}`;
+  document.getElementById('metaReservaInfo').textContent=
+    `Atual: ${fR(resEm)} (${resPct}% do capital)`;
+
+  document.getElementById('metaRows').innerHTML=META_CATS.map(cat=>`
+    <div class="meta-row">
+      <div class="meta-cat-label" style="color:${cat.color}">${cat.label}</div>
+      <div class="meta-pct-wrap">
+        <input type="number" id="m_${cat.key}" value="${t[cat.key]||0}" min="0" max="100" oninput="calcMetaValues()">
+        <div class="meta-pct-sfx">%</div>
+      </div>
+      <div class="meta-rval" id="mr_${cat.key}">
+        <strong>${fR(portfolio*(t[cat.key]||0)/100)}</strong>
+        de ${fR(portfolio)}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('metaNotes').value=c.notes||'';
+  calcMetaValues();
+  openM('mMetas');
+}
+
+function calcMetaValues(){
+  const c=getC(); if(!c) return;
+  const portfolio=(+c.totalCapital||0)-(+c.emergencyReserve||0);
+  let total=0;
+  META_CATS.forEach(cat=>{
+    const pct=+document.getElementById('m_'+cat.key)?.value||0;
+    total+=pct;
+    const el=document.getElementById('mr_'+cat.key);
+    if(el) el.innerHTML=`<strong>${fR(portfolio*pct/100)}</strong> de ${fR(portfolio)}`;
+  });
+  const msg=document.getElementById('metaMsg');
+  if(msg){
+    const active=META_CATS.filter(cat=>(+document.getElementById('m_'+cat.key)?.value||0)>0);
+    const ok=total===100||total===0;
+    const hint=total===0?' <span style="color:var(--muted);font-size:10px">— sem metas definidas</span>':total===100?' ✓':' <span style="color:var(--muted);font-size:10px">— ativas devem somar 100%</span>';
+    msg.innerHTML=`Soma: <span style="color:${ok?'#4ade80':'#f97316'};font-size:13px">${total}%</span>${hint}`;
+  }
+}
+
+function applyPreset(preset){
+  const p=PRESETS_META[preset]; if(!p) return;
+  META_CATS.forEach(cat=>{
+    const el=document.getElementById('m_'+cat.key);
+    if(el) el.value=p[cat.key]||0;
+  });
+  calcMetaValues();
+}
+
+function saveMetas(){
+  const c=getC(); if(!c) return;
+  let total=0;
+  const targets={};
+  META_CATS.forEach(cat=>{
+    const v=+document.getElementById('m_'+cat.key)?.value||0;
+    targets[cat.key]=v; total+=v;
+  });
+  // Categorias zeradas são permitidas; apenas categorias com valor > 0 precisam somar 100%
+  const activeTotal = META_CATS.filter(cat=>targets[cat.key]>0).reduce((s,cat)=>s+targets[cat.key],0);
+  if(activeTotal>0 && activeTotal!==100){
+    alert(`As categorias ativas devem somar 100%.\nAtual: ${activeTotal}%\n\nDica: categorias com 0% ficam ocultas automaticamente.`);
+    return;
+  }
+  c.allocationTargets=targets;
+  c.notes=document.getElementById('metaNotes').value.trim();
+  save(); closeM('mMetas'); renderDash();
+}
+
+// ══ TESOURO DIRETO ══
+async function updateTD(){
+  const btn=document.getElementById('btnUpdateTD');
+  const status=document.getElementById('tdStatus');
+  btn.textContent='⏳ Buscando TD...'; btn.disabled=true;
+  try {
+    const r=await fetch('https://www.tesourodireto.com.br/json/br/com/b3/tesourodireto/broker/backend/priceDateDay.json');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    const bonds=(data.response?.TrsrBdTradgList||[]);
+    const c=getC(); if(!c) return;
+    let n=0;
+    (c.investments||[]).filter(i=>i.category==='titulos').forEach(inv=>{
+      const nm=inv.name.toLowerCase().replace(/\s+/g,'');
+      const match=bonds.find(b=>{
+        const bnm=(b.TrsrBd?.nm||'').toLowerCase().replace(/\s+/g,'');
+        return bnm.includes(nm)||nm.includes(bnm)||bnm===nm;
+      });
+      if(match){
+        const price=match.TrsrBd.untrRedVal;
+        const qty=inv.quantity||1;
+        inv.currentValue=+(price*qty).toFixed(2);
+        inv.priceHistory=inv.priceHistory||[];
+        inv.priceHistory.push({date:today(),value:inv.currentValue,note:'Auto TD'});
+        n++;
+      }
+    });
+    save(); renderDash();
+    btn.textContent=`✓ TD: ${n} atualizados`;
+    status.textContent=`Tesouro Direto: ${n} título(s) atualizado(s) em ${new Date().toLocaleTimeString('pt-BR')}`;
+    status.style.color='var(--titulos)';
+  } catch(e){
+    btn.textContent='⚠️ Erro TD';
+    status.textContent='Não foi possível acessar a API do Tesouro Direto. Tente novamente ou atualize manualmente.';
+    status.style.color='var(--variavel)';
+    console.error(e);
+  } finally {
+    btn.disabled=false;
+    setTimeout(()=>{ btn.textContent='↻ Tesouro Direto'; status.textContent=''; },6000);
+  }
+}
+
+// ══ BRAPI — AÇÕES & FIIs ══
+async function updateBrapi(){
+  const btn=document.getElementById('btnUpdateBrapi');
+  const status=document.getElementById('tdStatus');
+  btn.textContent='⏳ Buscando...'; btn.disabled=true;
+  const c=getC(); if(!c){ btn.disabled=false; return; }
+  const tickers=[...(new Set((c.investments||[]).filter(i=>i.category==='variavel'&&i.ticker).map(i=>i.ticker)))];
+  if(!tickers.length){ btn.textContent='Sem tickers'; btn.disabled=false; return; }
+  try {
+    const url=`https://brapi.dev/api/quote/${tickers.join(',')}?token=${BRAPI_KEY}`;
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    const results=data.results||[];
+    let n=0;
+    (c.investments||[]).filter(i=>i.category==='variavel'&&i.ticker).forEach(inv=>{
+      const q=results.find(r=>r.symbol===inv.ticker);
+      if(q&&q.regularMarketPrice){
+        const qty=inv.quantity||1;
+        inv.currentValue=+(q.regularMarketPrice*qty).toFixed(2);
+        inv.priceHistory=inv.priceHistory||[];
+        inv.priceHistory.push({date:today(),value:inv.currentValue,note:`Auto brapi: R$${q.regularMarketPrice}`});
+        n++;
+      }
+    });
+    save(); renderDash();
+    btn.textContent=`✓ ${n} atualizados`;
+    status.textContent=`Ações/FIIs: ${n} ativo(s) atualizado(s) via brapi.dev em ${new Date().toLocaleTimeString('pt-BR')}`;
+    status.style.color='var(--variavel)';
+  } catch(e){
+    btn.textContent='⚠️ Erro brapi';
+    status.textContent='Erro ao buscar preços. Verifique sua conexão e a chave da API.';
+    status.style.color='#f87171';
+    console.error(e);
+  } finally {
+    btn.disabled=false;
+    setTimeout(()=>{ btn.textContent='↻ Ações / FIIs'; status.textContent=''; },6000);
+  }
+}
+
+// ══ SEED: HELENA ══
+function seedHelena(){
+  // FII data: Nubank extrato 21/04/2026 | BB data: extrato 08/05/2026
+  const fiiData=[
+    {id:'h-08',tk:'KNCR11',qty:55, pm:98.01, curr:5892.15,provAcum:2309.38,divAbr:{date:'2026-04-14',amount:63.25}},
+    {id:'h-09',tk:'RBHG11',qty:63, pm:63.56, curr:4376.61,provAcum:307.44, divAbr:{date:'2026-04-15',amount:53.55}},
+    {id:'h-10',tk:'PCIP11',qty:49, pm:89.45, curr:4208.61,provAcum:1713.18,divAbr:{date:'2026-04-16',amount:41.65}},
+    {id:'h-11',tk:'RBRY11',qty:30, pm:94.15, curr:2794.50,provAcum:1249.65,divAbr:{date:'2026-04-17',amount:31.80}},
+    {id:'h-12',tk:'OUJP11',qty:25, pm:75.98, curr:2206.25,provAcum:157.50, divAbr:{date:'2026-04-15',amount:27.50}},
+    {id:'h-13',tk:'HSLG11',qty:30, pm:83.68, curr:2764.20,provAcum:824.58, divAbr:{date:'2026-04-15',amount:21.60}},
+    {id:'h-14',tk:'BBFO11',qty:24, pm:62.39, curr:1750.80,provAcum:114.72, divAbr:{date:'2026-04-15',amount:21.84}},
+    {id:'h-15',tk:'HGRE11',qty:14, pm:115.97,curr:1773.52,provAcum:80.50,  divAbr:{date:'2026-04-15',amount:11.90}},
+    {id:'h-16',tk:'RBFM11',qty:75, pm:9.81,  curr:811.50, provAcum:24.15,  divAbr:{date:'2026-04-15',amount:8.10}},
+  ];
+  const mk=(id,name,ticker,cat,sub,date,amt,curr,notes,divs,qty,ppu,phDate,phNote)=>({
+    id,name,ticker,category:cat,subcat:sub,purchaseDate:date,amountInvested:amt,
+    quantity:qty||null,pricePerUnit:ppu||null,
+    currentValue:curr,notes,dividends:(divs||[]).map(d=>({id:uid(),...d})),
+    priceHistory:[{date:phDate||'2026-04-21',value:curr,note:phNote||'Extrato Abril 2026'}]
+  });
+  const fiiInvs = fiiData.map(f=>{
+    const costBasis = Math.round(f.qty * f.pm * 100)/100;
+    const histDiv   = Math.round((f.provAcum - f.divAbr.amount)*100)/100;
+    const divs = [];
+    if(histDiv>0) divs.push({date:'2026-04-01',amount:histDiv,type:'Rendimento',notes:'Proventos acumulados históricos (pré-Abril 2026)'});
+    divs.push({...f.divAbr, type:'Rendimento', notes:'Rendimento Abril 2026'});
+    return mk(f.id,f.tk,f.tk,'imoveis','FII','2024-06-01',costBasis,f.curr,
+      'FII — Carteira Nubank | PM: R$ '+f.pm.toFixed(2)+' | Qtd: '+f.qty,
+      divs, f.qty, f.pm, '2026-04-21','Extrato Nubank 21/04/2026');
+  });
+  return {
+    id:'helena-001', name:'Helena',
+    totalCapital: 1784599,
+    emergencyReserve: 47477,
+    createdAt:'2026-04-21',
+    notes:'Meta aposentadoria: R$ 20.000/mês | Renda atual: R$ 12.249/mês | BB: R$ 458.020,41 (08/05/2026) | FIIs Nubank: R$ 26.578,14 (21/04/2026)',
+    allocationTargets:{variavel:2,fixo:20,titulos:0,imoveis:78},
+    investments:[
+      mk('h-01','Casa (Residencial)','','imoveis','Residencial','2020-01-01',600000,600000,
+        'Retorno líquido: R$ 1.403,60/mês (0,23%/mês) ⚠️ Abaixo da inflação',
+        [{date:'2026-04-01',amount:1403.60,type:'Aluguel',notes:'Aluguel líquido Abril 2026'}]),
+      mk('h-02','Terras (Rural)','','imoveis','Rural','2018-01-01',700000,700000,
+        'Retorno líquido: R$ 1.208,33/mês (0,17%/mês) ⚠️ Abaixo da inflação',
+        [{date:'2026-04-01',amount:1208.33,type:'Aluguel',notes:'Renda líquida Abril 2026'}]),
+      mk('h-03','Brasilprev','','fixo','Previdência Privada','2015-01-01',219905,251273.26,
+        '⚠️ Rendendo ~66% do CDI — TROCAR para KINEA CP PREV RF | Atualizado: 08/05/2026',
+        [], null,null,'2026-05-08','Extrato BB 08/05/2026'),
+      mk('h-04','FI BB RF LP HIGH','','fixo','Fundo de Investimento','2022-01-01',72398,72888.02,
+        'Sem objetivo definido — aguardando realocação | Atualizado: 08/05/2026',
+        [], null,null,'2026-05-08','Extrato BB 08/05/2026'),
+      mk('h-05','LCA Banco do Brasil','','fixo','LCA','2025-01-01',30701,30874.51,
+        '→ Migrar para completar Reserva de Emergência (meta: R$ 60.000) | Atualizado: 08/05/2026',
+        [], null,null,'2026-05-08','Extrato BB 08/05/2026'),
+      mk('h-06','CDB Banco do Brasil','','fixo','CDB','2024-01-01',32734,102984.62,
+        'CDB consolidado (inclui BB Rende Fácil) — Atualizado: 08/05/2026',
+        [], null,null,'2026-05-08','Extrato BB 08/05/2026'),
+      ...fiiInvs,
+    ]
+  };
+}
+
+// ══ MIGRAÇÃO HELENA MAIO 2026 ══
+function migrateHelenaMaio2026(){
+  if(localStorage.getItem('helena_maio2026_applied')) return;
+  const helena = state.clients.find(c=>c.id==='helena-001'||c.name==='Helena');
+  if(!helena) return;
+
+  // Atualiza BB com dados de 08/05/2026
+  const bbUpdates = {
+    'h-03':{curr:251273.26, notes:'⚠️ Rendendo ~66% do CDI — TROCAR para KINEA CP PREV RF | Atualizado: 08/05/2026'},
+    'h-04':{curr:72888.02,  notes:'Sem objetivo definido — aguardando realocação | Atualizado: 08/05/2026'},
+    'h-05':{curr:30874.51,  notes:'→ Migrar para completar Reserva de Emergência (meta: R$ 60.000) | Atualizado: 08/05/2026'},
+    'h-06':{curr:102984.62, notes:'CDB consolidado (inclui BB Rende Fácil) — Atualizado: 08/05/2026'},
+    'h-07':{curr:0,         notes:'Consolidado no CDB BB (Maio 2026)'},
+  };
+  // Atualiza FIIs com dados completos da Nubank (21/04/2026)
+  const fiiUpdates = {
+    'h-08':{curr:5892.15,qty:55,pm:98.01, provAcum:2309.38,divAbr:63.25},
+    'h-09':{curr:4376.61,qty:63,pm:63.56, provAcum:307.44, divAbr:53.55},
+    'h-10':{curr:4208.61,qty:49,pm:89.45, provAcum:1713.18,divAbr:41.65},
+    'h-11':{curr:2794.50,qty:30,pm:94.15, provAcum:1249.65,divAbr:31.80},
+    'h-12':{curr:2206.25,qty:25,pm:75.98, provAcum:157.50, divAbr:27.50},
+    'h-13':{curr:2764.20,qty:30,pm:83.68, provAcum:824.58, divAbr:21.60},
+    'h-14':{curr:1750.80,qty:24,pm:62.39, provAcum:114.72, divAbr:21.84},
+    'h-15':{curr:1773.52,qty:14,pm:115.97,provAcum:80.50,  divAbr:11.90},
+    'h-16':{curr:811.50, qty:75,pm:9.81,  provAcum:24.15,  divAbr:8.10},
+  };
+
+  helena.investments.forEach(inv=>{
+    if(bbUpdates[inv.id]){
+      const u = bbUpdates[inv.id];
+      inv.currentValue = u.curr;
+      inv.notes = u.notes;
+      inv.priceHistory = inv.priceHistory||[];
+      if(!inv.priceHistory.find(p=>p.date==='2026-05-08'))
+        inv.priceHistory.push({date:'2026-05-08',value:u.curr,note:'Extrato BB 08/05/2026'});
+    }
+    if(fiiUpdates[inv.id]){
+      const u = fiiUpdates[inv.id];
+      inv.currentValue = u.curr;
+      inv.quantity = u.qty;
+      inv.pricePerUnit = u.pm;
+      inv.amountInvested = Math.round(u.qty * u.pm * 100)/100;
+      inv.notes = 'FII — Carteira Nubank | PM: R$ '+u.pm.toFixed(2)+' | Qtd: '+u.qty;
+      inv.priceHistory = inv.priceHistory||[];
+      if(!inv.priceHistory.find(p=>p.date==='2026-04-21'))
+        inv.priceHistory.push({date:'2026-04-21',value:u.curr,note:'Extrato Nubank 21/04/2026'});
+      // Adiciona dividendos históricos acumulados pré-Abril 2026
+      inv.dividends = inv.dividends||[];
+      const histDiv = Math.round((u.provAcum - u.divAbr)*100)/100;
+      if(histDiv>0 && !inv.dividends.find(d=>d.notes&&d.notes.includes('históricos')))
+        inv.dividends.unshift({id:uid(),date:'2026-04-01',amount:histDiv,type:'Rendimento',notes:'Proventos acumulados históricos (pré-Abril 2026)'});
+    }
+  });
+
+  // Remove h-07 (BB Rende Fácil zerado — consolidado no CDB)
+  // Mantém no array mas com valor 0 para não perder o histórico
+  helena.totalCapital = 1784599;
+  helena.notes = 'Meta aposentadoria: R$ 20.000/mês | Renda atual: R$ 12.249/mês | BB: R$ 458.020,41 (08/05/2026) | FIIs Nubank: R$ 26.578,14 (21/04/2026)';
+
+  localStorage.setItem('helena_maio2026_applied','1');
+  console.log('[Purungo] Migração Helena Maio 2026 aplicada com sucesso.');
+}
+
+// ══ INIT ══
+updSubcats(); chkAlloc();
+document.getElementById('sbAddBtn').onclick = openAddClient;
+
+function applyState(loaded){
+  state = loaded || { clients:[], activeId:null };
+
+  // Migra clientes de versões anteriores (v1, v2) sem perder dados
+  ['af_portfolio_v1','af_portfolio_v2'].forEach(oldKey=>{
+    try {
+      const old = JSON.parse(localStorage.getItem(oldKey));
+      if(!old || !old.clients || !old.clients.length) return;
+      old.clients.forEach(oldClient=>{
+        const exists = state.clients.find(c=>c.id===oldClient.id || c.name===oldClient.name);
+        if(!exists){
+          (oldClient.investments||[]).forEach(inv=>{
+            inv.dividends = inv.dividends||[];
+            inv.priceHistory = inv.priceHistory||[{date:inv.purchaseDate||today(),value:inv.amountInvested,note:'Importado'}];
+          });
+          state.clients.push(oldClient);
+          console.log('Migrado:', oldClient.name, 'de', oldKey);
+        }
+      });
+    } catch(e){ console.warn('Erro ao migrar', oldKey, e); }
+  });
+
+  // Adiciona Helena somente se ainda não existir
+  if(!state.clients.find(c=>c.id==='helena-001'||c.name==='Helena')){
+    state.clients.push(seedHelena());
+  }
+
+  // Migração: atualiza dados de Helena com extrato BB (08/05/2026) e FIIs Nubank (21/04/2026)
+  migrateHelenaMaio2026();
+
+  if(!state.activeId || !state.clients.find(c=>c.id===state.activeId)){
+    state.activeId = state.clients[0]?.id || null;
+  }
+
+  localStorage.setItem(STORAGE, JSON.stringify(state));
+  renderSidebar();
+  renderDash();
+}
+
+async function init(){
+  setSyncStatus('loading','⏳ Carregando...');
+  let loaded = null;
+
+  // Tenta carregar do Supabase primeiro
+  try {
+    loaded = await sbLoad();
+    if(loaded){
+      console.log('[Purungo] Dados carregados do Supabase.');
+      setSyncStatus('ok','☁️ Sincronizado');
+    }
+  } catch(e){ console.warn('[Purungo] Supabase indisponível, usando localStorage.'); }
+
+  // Fallback para localStorage
+  if(!loaded){
+    try { loaded = JSON.parse(localStorage.getItem(STORAGE)); } catch(e){}
+    if(loaded) setSyncStatus('offline','⚠️ Offline — dados locais');
+    else setSyncStatus('offline','⚠️ Sem dados em nuvem');
+  }
+
+  applyState(loaded);
+}
+
+init();
+</script>
+</body>
+</html>

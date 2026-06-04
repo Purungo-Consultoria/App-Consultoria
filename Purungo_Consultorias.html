@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purungo Consultorias</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0b0d14;
+  --s1:#13151f;
+  --s2:#1a1d2e;
+  --s3:#20243a;
+  --border:#252840;
+  --border2:#2e3252;
+  --text:#e4e6f0;
+  --muted:#6b7194;
+  --muted2:#3d4166;
+  --blue:#60a5fa;
+  --green:#4ade80;
+  --orange:#f97316;
+  --purple:#a78bfa;
+  --gold:#fbbf24;
+  --brand:#3a5fd9;
+  --brand2:#4e73ed;
+  --sidebar-w:240px;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Segoe UI',system-ui,Arial,sans-serif;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+}
+
+/* ═══════════════════════════
+   SIDEBAR
+═══════════════════════════ */
+.sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  height:100vh;
+  background:var(--s1);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  z-index:10;
+}
+
+.logo-area{
+  padding:22px 18px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.logo-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--brand),#4ade80);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  flex-shrink:0;
+  box-shadow:0 0 16px rgba(58,95,217,.35);
+}
+.logo-text{}
+.logo-name{font-size:14px;font-weight:800;color:#fff;letter-spacing:.2px;line-height:1.2;}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:1px;}
+
+.nav{flex:1;padding:12px 10px;overflow-y:auto;}
+.nav-section{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.9px;padding:14px 8px 6px;font-weight:700;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 10px;border-radius:9px;
+  cursor:pointer;font-size:13px;color:var(--muted);
+  transition:all .15s;margin-bottom:2px;
+  border:1px solid transparent;
+  user-select:none;
+}
+.nav-item:hover{background:var(--s2);color:var(--text);}
+.nav-item.active{
+  background:rgba(58,95,217,.18);
+  border-color:rgba(58,95,217,.35);
+  color:#fff;font-weight:600;
+}
+.nav-item.active .nav-icon{filter:none;}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{
+  margin-left:auto;
+  font-size:9px;font-weight:700;
+  background:rgba(58,95,217,.3);
+  color:var(--blue);
+  padding:2px 7px;border-radius:8px;
+}
+.nav-badge.new{background:rgba(74,222,128,.2);color:var(--green);}
+
+.sidebar-footer{
+  padding:14px 16px;
+  border-top:1px solid var(--border);
+  font-size:10px;color:var(--muted2);
+  line-height:1.6;
+}
+.sidebar-footer strong{color:var(--muted);display:block;margin-bottom:2px;}
+
+/* ═══════════════════════════
+   CONTENT AREA
+═══════════════════════════ */
+.content{
+  flex:1;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* TOPBAR */
+.topbar{
+  height:52px;
+  min-height:52px;
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 24px;
+  gap:12px;
+}
+.topbar-title{font-size:14px;font-weight:700;color:#fff;}
+.topbar-sub{font-size:11px;color:var(--muted);margin-left:4px;}
+.topbar-spacer{flex:1;}
+.topbar-pill{
+  font-size:10px;font-weight:700;
+  background:rgba(74,222,128,.1);color:var(--green);
+  border:1px solid rgba(74,222,128,.2);
+  padding:3px 10px;border-radius:8px;
+}
+
+/* PÁGINA DASHBOARD */
+.page{display:none;flex:1;overflow:auto;}
+.page.active{display:flex;flex-direction:column;}
+
+/* IFRAME WRAPPER */
+.iframe-page{display:none;flex:1;overflow:hidden;}
+.iframe-page.active{display:flex;flex-direction:column;}
+.iframe-page iframe{
+  flex:1;width:100%;border:none;
+  background:var(--bg);
+}
+
+/* ═════════════ DASHBOARD ═════════════ */
+.dash{
+  flex:1;
+  padding:28px 30px;
+  overflow:auto;
+}
+.dash-hero{
+  background:linear-gradient(135deg,rgba(58,95,217,.2) 0%,rgba(74,222,128,.08) 100%);
+  border:1px solid rgba(58,95,217,.3);
+  border-radius:16px;
+  padding:28px 30px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+}
+.dash-hero::before{
+  content:'';
+  position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(58,95,217,.15),transparent 70%);
+  border-radius:50%;
+}
+.dash-hero h2{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
+.dash-hero p{font-size:13px;color:#8a8fa8;line-height:1.6;max-width:520px;}
+.hero-date{font-size:11px;color:var(--brand2);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.dash-card{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:13px;padding:18px 20px;
+  cursor:pointer;transition:all .18s;
+  position:relative;overflow:hidden;
+}
+.dash-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--c,var(--brand));
+}
+.dash-card:hover{
+  border-color:var(--c,var(--brand));
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+  transform:translateY(-2px);
+}
+.dc-icon{font-size:26px;margin-bottom:12px;}
+.dc-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;}
+.dc-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.dc-arrow{
+  position:absolute;bottom:16px;right:16px;
+  font-size:16px;color:var(--muted2);
+  transition:transform .15s;
+}
+.dash-card:hover .dc-arrow{transform:translateX(4px);color:var(--muted);}
+
+.dash-section-title{
+  font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.7px;font-weight:700;margin-bottom:12px;
+}
+
+.dash-info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px;}
+.info-box{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:12px;padding:16px 18px;
+}
+.info-box h4{font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+.info-box p, .info-box li{font-size:11px;color:var(--muted);line-height:1.7;}
+.info-box ul{list-style:none;padding:0;}
+.info-box li::before{content:'→ ';color:var(--brand2);}
+
+.dash-tip{
+  background:rgba(251,191,36,.07);
+  border:1px solid rgba(251,191,36,.2);
+  border-radius:10px;padding:14px 16px;
+  font-size:11px;color:#c8a84b;line-height:1.6;
+}
+.dash-tip strong{color:var(--gold);}
+
+/* Barra de status */
+.status-bar{
+  display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;
+}
+.status-pill{
+  font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:8px;
+  display:flex;align-items:center;gap:5px;
+}
+.sp-ok{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.sp-warn{background:rgba(251,191,36,.1);color:var(--gold);border:1px solid rgba(251,191,36,.2);}
+
+/* BOTÃO PRIVACIDADE */
+.privacy-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 13px;border-radius:8px;
+  border:1px solid var(--border2);
+  background:var(--s2);color:var(--muted);
+  font-size:11px;font-weight:700;cursor:pointer;
+  transition:all .18s;white-space:nowrap;
+}
+.privacy-btn:hover{border-color:var(--muted);color:var(--text);}
+.privacy-btn.privado{
+  background:rgba(251,191,36,.12);
+  border-color:rgba(251,191,36,.4);
+  color:var(--gold);
+}
+.privacy-btn .pb-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--muted2);flex-shrink:0;
+  transition:background .18s;
+}
+.privacy-btn.privado .pb-dot{background:var(--gold);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════ SIDEBAR ════════════════════════════════ -->
+<div class="sidebar">
+  <div class="logo-area">
+    <div class="logo-icon">🌿</div>
+    <div class="logo-text">
+      <div class="logo-name">Purungo</div>
+      <div class="logo-sub">Consultorias · AF</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Principal</div>
+
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+
+    <div class="nav-item" onclick="showPage('carteira')">
+      <span class="nav-icon">👥</span> Carteira de Clientes
+      <span class="nav-badge new">Ativo</span>
+    </div>
+
+    <div class="nav-section">Ferramentas</div>
+
+    <div class="nav-item" onclick="showPage('aposentadoria')">
+      <span class="nav-icon">🎯</span> Simulador Aposentadoria
+    </div>
+
+    <div class="nav-item" onclick="showPage('metaapos')">
+      <span class="nav-icon">🏆</span> Meta de Aposentadoria
+    </div>
+
+    <div class="nav-item" onclick="showPage('juros')">
+      <span class="nav-icon">📈</span> Juros Compostos
+    </div>
+
+    <div class="nav-item" onclick="showPage('tesouro')">
+      <span class="nav-icon">📊</span> Tesouro Direto
+    </div>
+
+    <div class="nav-section" style="margin-top:6px;">Análise</div>
+
+    <div class="nav-item" onclick="showPage('analise')">
+      <span class="nav-icon">🔭</span> Análise de Mercado
+      <span class="nav-badge new">Novo</span>
+    </div>
+
+    <div class="nav-section" style="margin-top:6px;">Em breve</div>
+
+    <div class="nav-item" style="opacity:.45;cursor:default;">
+      <span class="nav-icon">📁</span> Análise de Ações
+    </div>
+    <div class="nav-item" style="opacity:.45;cursor:default;">
+      <span class="nav-icon">📋</span> Relatórios PDF
+    </div>
+    <div class="nav-item" style="opacity:.45;cursor:default;">
+      <span class="nav-icon">💬</span> Área do Cliente
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <strong>Consultoria Alex Fernando</strong>
+    Value Investing · Buffett · Munger · Howard Marks
+  </div>
+</div>
+
+<!-- ════════════════════════════════ CONTENT ════════════════════════════════ -->
+<div class="content">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div id="topTitle" class="topbar-title">Dashboard</div>
+    <span id="topSub" class="topbar-sub"></span>
+    <div class="topbar-spacer"></div>
+    <button id="btnPrivacy" class="privacy-btn" onclick="togglePrivacy()" title="Oculta valores monetários na Carteira de Clientes">
+      <span class="pb-dot"></span>
+      <span id="privacyLabel">👁️ Valores Visíveis</span>
+    </button>
+    <div class="topbar-pill">✓ Ativo</div>
+  </div>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="dash">
+
+      <div class="dash-hero">
+        <div class="hero-date" id="heroDate"></div>
+        <h2>Bem-vindo, Alex 👋</h2>
+        <p>Gerencie suas consultorias, simule cenários de investimento e acompanhe a carteira dos seus clientes — tudo em um só lugar.</p>
+        <div class="status-bar">
+          <div class="status-pill sp-ok">🌿 Purungo Consultorias v1.1</div>
+          <div class="status-pill sp-ok">✓ 4 Simuladores Ativos</div>
+          <div class="status-pill sp-ok">✓ Carteira de Clientes</div>
+          <div class="status-pill sp-ok">✓ Análise de Mercado</div>
+        </div>
+      </div>
+
+      <!-- ACESSO RÁPIDO -->
+      <div class="dash-section-title">Acesso Rápido</div>
+      <div class="dash-grid">
+
+        <div class="dash-card" style="--c:#a78bfa" onclick="showPage('carteira')">
+          <div class="dc-icon">👥</div>
+          <div class="dc-name">Carteira de Clientes</div>
+          <div class="dc-desc">Gerencie os investimentos de cada cliente, acompanhe rendimentos e dividendos em tempo real.</div>
+          <div class="dc-arrow">→</div>
+        </div>
+
+        <div class="dash-card" style="--c:#4ade80" onclick="showPage('aposentadoria')">
+          <div class="dc-icon">🎯</div>
+          <div class="dc-name">Simulador de Aposentadoria</div>
+          <div class="dc-desc">Mostre ao cliente os 3 cenários — Conservador, Intermediário e Arrojado — com trajetória completa.</div>
+          <div class="dc-arrow">→</div>
+        </div>
+
+        <div class="dash-card" style="--c:#60a5fa" onclick="showPage('tesouro')">
+          <div class="dc-icon">📊</div>
+          <div class="dc-name">Simulador Tesouro Direto</div>
+          <div class="dc-desc">Simule Selic, IPCA+, Prefixado e Renda+ com taxas customizadas. Compare todos os tipos lado a lado para o cliente.</div>
+          <div class="dc-arrow">→</div>
+        </div>
+
+        <div class="dash-card" style="--c:#a78bfa" onclick="showPage('metaapos')">
+          <div class="dc-icon">🏆</div>
+          <div class="dc-name">Meta de Aposentadoria</div>
+          <div class="dc-desc">O cliente diz quanto quer receber por mês — o simulador calcula quanto precisa guardar e o caminho para chegar lá.</div>
+          <div class="dc-arrow">→</div>
+        </div>
+
+        <div class="dash-card" style="--c:#f97316" onclick="showPage('juros')">
+          <div class="dc-icon">📈</div>
+          <div class="dc-name">Juros Compostos</div>
+          <div class="dc-desc">Visualize o poder dos juros compostos com aportes mensais, compare cenários e veja a tabela de evolução anual.</div>
+          <div class="dc-arrow">→</div>
+        </div>
+
+      </div>
+
+      <!-- INFO BOXES -->
+      <div class="dash-section-title">Sobre a Metodologia</div>
+      <div class="dash-info-grid">
+
+        <div class="info-box">
+          <h4>🏛️ Filosofia de Investimento</h4>
+          <ul>
+            <li>Value Investing — boas empresas por ótimos preços</li>
+            <li>Sempre longo prazo, nunca trade</li>
+            <li>Inspiração: Buffett, Munger, Howard Marks</li>
+            <li>Bancos favoritos: BB, Itaú, BTG, Inter</li>
+            <li>Análise gráfica só para timing de entrada</li>
+          </ul>
+        </div>
+
+        <div class="info-box">
+          <h4>📐 Critérios de Análise Técnica</h4>
+          <ul>
+            <li>EMA 90 dias — tendência principal</li>
+            <li>RSI — sobrecompra / sobrevenda</li>
+            <li>MACD — momentum e cruzamentos</li>
+            <li>Suporte e resistência — preço de entrada</li>
+            <li>Assina VAROS — análises fundamentalistas</li>
+          </ul>
+        </div>
+
+        <div class="info-box">
+          <h4>🎯 Categorias de Carteira</h4>
+          <ul>
+            <li>Renda Variável — ações e FIIs</li>
+            <li>Renda Fixa — CDBs e debêntures</li>
+            <li>Títulos Públicos — Tesouro Direto</li>
+            <li>Imóveis — fundos imobiliários</li>
+            <li>Reserva de Emergência — liquidez</li>
+          </ul>
+        </div>
+
+        <div class="info-box">
+          <h4>📋 Próximos Módulos Planejados</h4>
+          <ul>
+            <li>Base de análises de ações (BBAS3, BPAC3F…)</li>
+            <li>Gerador de relatório PDF por cliente</li>
+            <li>Integração VAROS — análises automáticas</li>
+            <li>Área do cliente — acesso externo</li>
+            <li>Simulador de juros compostos</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="dash-tip">
+        <strong>💡 Dica de uso:</strong> Navegue pelo menu lateral para acessar os simuladores. Use o <strong>Simulador de Aposentadoria</strong> para mostrar cenários ao cliente em reunião — os 3 perfis ficam visíveis ao mesmo tempo. O <strong>Tesouro Renda+ 2065</strong> é perfeito para mostrar o potencial de ganho com a queda da Selic.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ CARTEIRA CLIENTES ══ -->
+  <div class="iframe-page" id="page-carteira">
+    <iframe src="Carteira_Clientes.html" id="frame-carteira" title="Carteira de Clientes"></iframe>
+  </div>
+
+  <!-- ══ SIMULADOR APOSENTADORIA ══ -->
+  <div class="iframe-page" id="page-aposentadoria">
+    <iframe src="Simulador_Aposentadoria.html" id="frame-aposentadoria" title="Simulador de Aposentadoria"></iframe>
+  </div>
+
+  <!-- ══ META APOSENTADORIA ══ -->
+  <div class="iframe-page" id="page-metaapos">
+    <iframe src="Simulador_Meta_Aposentadoria.html" id="frame-metaapos" title="Meta de Aposentadoria"></iframe>
+  </div>
+
+  <!-- ══ JUROS COMPOSTOS ══ -->
+  <div class="iframe-page" id="page-juros">
+    <iframe src="Simulador_Juros_Compostos.html" id="frame-juros" title="Simulador de Juros Compostos"></iframe>
+  </div>
+
+  <!-- ══ SIMULADOR TESOURO DIRETO ══ -->
+  <div class="iframe-page" id="page-tesouro">
+    <iframe src="Simulador_Tesouro.html" id="frame-tesouro" title="Simulador Tesouro Direto"></iframe>
+  </div>
+
+  <!-- ══ ANÁLISE DE MERCADO ══ -->
+  <div class="page" id="page-analise">
+    <div class="dash">
+
+      <!-- CABEÇALHO -->
+      <div class="dash-hero" style="background:linear-gradient(135deg,rgba(167,139,250,.15) 0%,rgba(251,191,36,.06) 100%);border-color:rgba(167,139,250,.3);">
+        <div class="hero-date">Notas e Transcrições · Atualizado Jun/2026</div>
+        <h2>🔭 Análise de Mercado</h2>
+        <p>Transcrições de vídeos, relatórios e opiniões de analistas acompanhados. Conteúdo separado entre <strong style="color:#a78bfa">dados objetivos</strong> e <strong style="color:#fbbf24">opiniões dos analistas</strong>.</p>
+        <div class="status-bar">
+          <div class="status-pill" style="background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25);">🎬 1 vídeo transcrito</div>
+          <div class="status-pill sp-warn">⚠ Opiniões não são recomendações</div>
+        </div>
+      </div>
+
+      <!-- ENTRADA: BRAGA JUN/2026 -->
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700;">Entradas</div>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px;">
+        <!-- Header do card -->
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;cursor:pointer;" onclick="toggleAnalise('braga-jun26')">
+          <div style="width:42px;height:42px;background:linear-gradient(135deg,#3a5fd9,#a78bfa);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🎬</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;color:#fff;">João Luiz Braga — Encore Asset</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">Vídeo Mensal · Junho 2026 · Transcrição: Alex Fernando</div>
+          </div>
+          <div style="font-size:11px;color:var(--blue);font-weight:700;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.2);padding:3px 10px;border-radius:8px;">Macro · Agro · Mercado</div>
+          <div id="arrow-braga-jun26" style="font-size:18px;color:var(--muted);transition:transform .2s;">▼</div>
+        </div>
+
+        <!-- Conteúdo expansível -->
+        <div id="analise-braga-jun26" style="display:none;padding:20px 24px;">
+
+          <!-- AVISO -->
+          <div style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:9px;padding:11px 14px;font-size:11px;color:#c8a84b;margin-bottom:20px;line-height:1.6;">
+            ⚠ <strong style="color:#fbbf24;">Aviso:</strong> Todo conteúdo em amarelo representa exclusivamente as visões de João Luiz Braga. Os dados em azul são extraídos de fontes como BofA, Goldman Sachs, XP Research, NOAA e CRU.
+          </div>
+
+          <!-- TESE CENTRAL -->
+          <div style="background:rgba(58,95,217,.1);border:1px solid rgba(58,95,217,.25);border-radius:10px;padding:14px 16px;margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">Tese Central</div>
+            <div style="font-size:12px;color:#c8d0f0;line-height:1.7;">Choque inflacionário convergente: múltiplos vetores simultâneos — petróleo, fertilizantes, El Niño e juros globais. No Brasil: agro endividado no máximo histórico + IPCA desancorando + curva de juros elevada. Contraponto: IA pode entregar ganhos de produtividade. Braga vê valuações no Brasil em extremo pessimismo e oportunidade de compra.</div>
+          </div>
+
+          <!-- PARTE 1: GLOBAL -->
+          <div style="font-size:12px;font-weight:800;color:#a78bfa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">Parte 1 — Macro Global e Commodities</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slide 8 — Estreito de Hormuz (BofA FMS)</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• 44% esperam reabertura em Jun/26<br>• 22% Q3/26 · 10% Mai/26<br>• 6% Q4/26 · 5% 2027 ou depois</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — Petróleo</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">Cita Morgan Downey: petróleo pode explodir para $150–200/bbl. Demanda inelástica — consumo caiu apenas 4x em 170 anos de mercado.</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slides 11–12 — Fertilizantes (CRU, Jan/20=100)</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• MAP Brazil CFR: <strong style="color:#f97316;">321,2</strong><br>• Ureia Brazil CFR: 259,8 · SAM: 224,1<br>• Enxofre China FOB: <strong style="color:#f97316;">1.463,4</strong><br>• Ácido Sulfúrico: 682,1 · Amônia: 304,3</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — Fertilizantes</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">Fertilizantes todos nos céus. Ureia subiu muito e vai afetar fortemente o agro. Comprime margens do produtor já endividado.</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slides 15–17 — Agro Brasileiro</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• Dívida/VBP lavouras: <strong style="color:#f97316;">93%</strong> (máx. histórico)<br>• Inadimplência crédito rural: <strong style="color:#f97316;">~14%</strong><br>• Juro recursos livres safra 25/26: 16,9% a.a.<br>• Migração para CPRs (fontes caras)</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — Agro</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">R$845bi em dívidas. Câmbio preocupa — dólar fraco = receita menor. Margem baixa + receita menor = risco altíssimo. Milho pode subir muito.</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slide 18 — El Niño (NOAA, Mai/2026)</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• JAS/26 em diante: <strong style="color:#f97316;">&gt;95%</strong> de probabilidade de El Niño<br>• Intensidade: moderado a muito forte<br>• Persiste até DJF 26/27</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — El Niño</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">Chance de super El Niño. Último evento causou quebra de ~15% na safra. Com margens já comprimidas, impacto seria ainda mais grave.</div>
+            </div>
+          </div>
+
+          <!-- PARTE 2: JUROS E IA -->
+          <div style="font-size:12px;font-weight:800;color:#a78bfa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">Parte 2 — Juros Globais e Inteligência Artificial</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slides 19–22 — IA e Juros (BofA/Goldman)</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• 66% do S&P 500 citou IA nas calls do 1T26<br>• Net 66% esperam CPI global mais alto<br>• Infra de IA: +40% earnings YTD vs S&P EW flat<br>• 73% veem long semicondutores como trade lotado</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — IA</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">Pontos nos dois lados. Cita Gita Gopinath: governos endividados sem munição fiscal — se IA não entregar produtividade real, pode implodir. Tudo depende de resultados concretos.</div>
+            </div>
+          </div>
+
+          <!-- PARTE 3: BRASIL -->
+          <div style="font-size:12px;font-weight:800;color:#a78bfa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">Parte 3 — Brasil: Macro e Mercado</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div style="background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Slides 27–30 — Brasil (XP/BCB)</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">• IPCA 2026 Focus: <strong style="color:#f97316;">~4,9%</strong> (era ~3,9%)<br>• Curva de juros flat em ~14% até 2036<br>• Sentiment XP: <strong style="color:#f97316;">-2,0</strong> (mínimo histórico)<br>• P/E Brasil vs ACWI: <strong style="color:#4ade80;">46%</strong> (média 10a: 62%)<br>• Resultado 1Q26 Brasil: 45% de lucro beat</div>
+            </div>
+            <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — Brasil</div>
+              <div style="font-size:11px;color:#c8a84b;line-height:1.7;">"Abriu a boca do jacaré" nos juros — vai bater forte nas domésticas. Pessimismo no extremo, PF fora da bolsa. Acredita ser ótimo momento de compra: tudo muito barato.</div>
+            </div>
+          </div>
+
+          <!-- PARTE 4: POSICIONAMENTO -->
+          <div style="font-size:12px;font-weight:800;color:#a78bfa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">Parte 4 — Movimentações da Encore</div>
+
+          <div style="background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:14px;margin-bottom:4px;">
+            <div style="font-size:10px;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💬 Opinião Braga — Carteira</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:#c8a84b;line-height:1.8;">
+              <div>🟢 <strong>Petrobras (PETR)</strong> — comprando, acha que está barata</div>
+              <div>🟢 <strong>Pague Menos (PGMN3)</strong> — comprou posição</div>
+              <div>🟢 <strong>Açaí</strong> — long, beneficiado com alta de commodities</div>
+              <div>🔴 <strong>Stone (STNE)</strong> — zerou, medo do endividamento (mas ainda acha barata)</div>
+            </div>
+          </div>
+
+        </div><!-- fim conteúdo -->
+      </div><!-- fim card -->
+
+    </div>
+  </div>
+  <!-- ══ FIM ANÁLISE ══ -->
+
+</div>
+
+<script>
+const pageConfig = {
+  dashboard:     { title:'Dashboard',                       sub:'Purungo Consultorias' },
+  carteira:      { title:'Carteira de Clientes',            sub:'Gestão de patrimônio' },
+  aposentadoria: { title:'Simulador de Aposentadoria',      sub:'3 cenários · Conservador · Intermediário · Arrojado' },
+  metaapos:      { title:'Meta de Aposentadoria',           sub:'Quanto preciso guardar para chegar lá?' },
+  juros:         { title:'Simulador de Juros Compostos',    sub:'Evolução do capital com aportes mensais' },
+  tesouro:       { title:'Simulador Tesouro Direto',        sub:'Selic · IPCA+ · Prefixado · Renda+' },
+  analise:       { title:'Análise de Mercado',              sub:'Transcrições e notas de analistas' },
+};
+
+let currentPage = 'dashboard';
+
+// ── MODO PRIVADO ───────────────────────────────────────────────
+const PRIVACY_CSS = `
+  .privado .client-total,
+  .privado #cTotal,
+  .privado #cReserva,
+  .privado #cReservaSub,
+  .privado #cCarteira,
+  .privado #cCarteiraSub,
+  .privado .alloc-bar-val,
+  .privado #dInvested,
+  .privado #dQty,
+  .privado #dCurrent,
+  .privado #dGainSub,
+  .privado #dDivTotal,
+  .privado .gain-val {
+    filter: blur(7px) !important;
+    user-select: none !important;
+    transition: filter .25s !important;
+  }
+`;
+
+let privacyOn = false;
+
+function applyPrivacyToFrame() {
+  const frame = document.getElementById('frame-carteira');
+  if (!frame) return;
+  try {
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    if (!doc || !doc.body) return;
+    if (!doc.getElementById('purungo-privacy-style')) {
+      const st = doc.createElement('style');
+      st.id = 'purungo-privacy-style';
+      st.textContent = PRIVACY_CSS;
+      doc.head.appendChild(st);
+    }
+    doc.body.classList.toggle('privado', privacyOn);
+  } catch(e) {
+    console.warn('Modo privado iframe:', e);
+  }
+}
+
+function togglePrivacy() {
+  privacyOn = !privacyOn;
+  const btn = document.getElementById('btnPrivacy');
+  const lbl = document.getElementById('privacyLabel');
+  btn.classList.toggle('privado', privacyOn);
+  lbl.textContent = privacyOn ? '🔒 Modo Privado' : '👁️ Valores Visíveis';
+  applyPrivacyToFrame();
+}
+
+// ── NAVEGAÇÃO ──────────────────────────────────────────────────
+function showPage(id) {
+  // Esconde tudo
+  document.querySelectorAll('.page, .iframe-page').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = '';
+  });
+
+  // Mostra o alvo
+  const target = document.getElementById('page-' + id);
+  if (!target) return;
+  target.classList.add('active');
+  if (target.classList.contains('iframe-page')) {
+    target.style.display = 'flex';
+  }
+
+  // Atualiza nav
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navItems = document.querySelectorAll('.nav-item');
+  const map = { dashboard:0, carteira:1, aposentadoria:2, metaapos:3, juros:4, tesouro:5, analise:6 };
+  if (map[id] !== undefined) navItems[map[id]]?.classList.add('active');
+
+  // Atualiza topbar
+  const cfg = pageConfig[id] || {};
+  document.getElementById('topTitle').textContent = cfg.title || id;
+  document.getElementById('topSub').textContent = cfg.sub ? ' · ' + cfg.sub : '';
+
+  currentPage = id;
+
+  // Reaplica privacidade ao entrar na Carteira
+  if (id === 'carteira') {
+    const frame = document.getElementById('frame-carteira');
+    if (frame) {
+      frame.onload = applyPrivacyToFrame;
+      setTimeout(applyPrivacyToFrame, 400);
+    }
+  }
+}
+
+// ── DATA NO HERO ───────────────────────────────────────────────
+(function() {
+  const d    = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('heroDate').textContent =
+    d.toLocaleDateString('pt-BR', opts).replace(/^\w/, c => c.toUpperCase());
+})();
+
+// ── TOGGLE ANÁLISE ────────────────────────────────────────────
+function toggleAnalise(id) {
+  const el = document.getElementById('analise-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// Inicia no dashboard
+showPage('dashboard');
+</script>
+</body>
+</html>
