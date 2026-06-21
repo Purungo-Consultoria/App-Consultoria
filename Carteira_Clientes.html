@@ -691,6 +691,7 @@ function mkBar(label,cat,actual,target,pct,tgtPct){
 }
 
 function renderTable(invs){
+  const c = getC();
   const tbody = document.getElementById('invBody');
   if(!invs.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty-row">Nenhum investimento. Clique em "+ Investimento".</td></tr>`; return; }
   tbody.innerHTML = invs.map(inv=>{
