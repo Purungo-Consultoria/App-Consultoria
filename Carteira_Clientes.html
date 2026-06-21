@@ -398,20 +398,14 @@ select.fc option{background:var(--surface);}
     </div>
 
     <!-- Cabeçalho -->
-    <div style="display:grid;grid-template-columns:160px 90px 1fr;gap:10px;padding:0 12px 6px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">
-      <div>Categoria</div><div style="text-align:center">Meta %</div><div>Valor alvo (calculado)</div>
+    <div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:10px;padding:0 12px 6px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">
+      <div>Nome da Categoria</div><div style="text-align:center">Meta %</div><div>Valor alvo (calculado)</div>
     </div>
 
     <div id="metaRows"></div>
 
     <div style="display:flex;justify-content:flex-end;margin:6px 0 14px;padding:6px 12px;background:var(--surface2);border-radius:7px;">
       <span style="font-size:12px;font-weight:700" id="metaMsg"></span>
-    </div>
-
-    <!-- Reserva de emergência -->
-    <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--muted);">
-      🟣 <strong style="color:#a78bfa">Reserva de Emergência</strong> — gerenciada separadamente via campo de capital do cliente
-      <span id="metaReservaInfo" style="margin-left:6px;"></span>
     </div>
 
     <!-- Estratégia -->
@@ -489,20 +483,30 @@ async function sbSave(data){
   }
 }
 
-const SUBCATS = {
-  variavel:['Ação','FII','ETF','BDR','Outro'],
-  fixo:['CDB','LCI','LCA','LC','Debênture','CRI','CRA','Previdência Privada','Fundo de Investimento','Outro'],
-  titulos:['Tesouro Selic','Tesouro IPCA+','Tesouro Prefixado','Tesouro Renda+','Outro'],
-  imoveis:['Residencial','Comercial','Terreno / Terra','Rural','Outro'],
-  reserva:['CDB Liquidez Diária','Fundo DI','Conta Corrente','Poupança','Nubank','Outro']
-};
-const CAT = {
-  variavel:{label:'Renda Variável',color:'#f97316'},
-  fixo:{label:'Renda Fixa',color:'#60a5fa'},
-  titulos:{label:'Títulos Públicos',color:'#4ade80'},
-  imoveis:{label:'Imóveis',color:'#fbbf24'},
-  reserva:{label:'Reserva',color:'#a78bfa'}
-};
+const DEFAULT_CATS = [
+  {key:'variavel',isDefault:true,label:'Renda Variável', color:'#f97316',emoji:'🟠',subcats:['Ação','FII','ETF','BDR','Outro']},
+  {key:'fixo',    isDefault:true,label:'Renda Fixa',      color:'#60a5fa',emoji:'🔵',subcats:['CDB','LCI','LCA','LC','Debênture','CRI','CRA','Previdência Privada','Fundo de Investimento','Outro']},
+  {key:'titulos', isDefault:true,label:'Títulos Públicos',color:'#4ade80',emoji:'🟢',subcats:['Tesouro Selic','Tesouro IPCA+','Tesouro Prefixado','Tesouro Renda+','Outro']},
+  {key:'imoveis', isDefault:true,label:'Imóveis',         color:'#fbbf24',emoji:'🟡',subcats:['Residencial','Comercial','Terreno / Terra','Rural','Outro']},
+  {key:'reserva', isDefault:true,label:'Reserva',         color:'#a78bfa',emoji:'🟣',subcats:['CDB Liquidez Diária','Fundo DI','Conta Corrente','Poupança','Nubank','Outro']},
+];
+const CAT_PALETTE = ['#f97316','#60a5fa','#4ade80','#fbbf24','#a78bfa','#f472b6','#22d3ee','#34d399','#fb923c','#818cf8','#e879f9','#2dd4bf'];
+const CAT_EMOJIS  = ['🟠','🔵','🟢','🟡','🟣','🔴','⚫','🟤','🟥','🟦','🟧','🟩'];
+
+// Compat: CAT e SUBCATS agora derivados de DEFAULT_CATS
+const CAT = {}; DEFAULT_CATS.forEach(c=>{CAT[c.key]={label:c.label,color:c.color};});
+const SUBCATS = {}; DEFAULT_CATS.forEach(c=>{SUBCATS[c.key]=c.subcats;});
+
+function getAllCats(c){
+  return [...DEFAULT_CATS,...(c?.customCategories||[])];
+}
+function getCatInfo(key,c){
+  const found=getAllCats(c).find(cat=>cat.key===key);
+  if(!found) return {key,label:key,color:'#888',emoji:'⚫',subcats:['Outro'],isDefault:false};
+  const lbl=(c?.categoryLabels||{})[key];
+  return {...found,label:lbl||found.label};
+}
+function getCatLabel(key,c){ return getCatInfo(key,c).label; }
 const AVCOLORS=['#3a5fd9','#a78bfa','#4ade80','#f97316','#f472b6','#22d3ee','#fb7185','#34d399'];
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -554,8 +558,9 @@ function renderDash(){
   const gainPct = totInv>0 ? gain/totInv*100 : 0;
 
   document.getElementById('cTotal').textContent = fR(c.totalCapital);
-  document.getElementById('cReserva').textContent = fR(c.emergencyReserve||0);
-  document.getElementById('cReservaSub').textContent = c.totalCapital ? ((c.emergencyReserve/c.totalCapital)*100).toFixed(1)+'% do capital' : '';
+  const reservaTotal=(invs||[]).filter(i=>i.category==='reserva').reduce((s,i)=>s+(+(i.currentValue??i.amountInvested)||0),0)||(+c.emergencyReserve||0);
+  document.getElementById('cReserva').textContent = fR(reservaTotal);
+  document.getElementById('cReservaSub').textContent = c.totalCapital ? (reservaTotal/c.totalCapital*100).toFixed(1)+'% do capital' : '';
   document.getElementById('cCarteira').textContent = fR(totCurr);
   document.getElementById('cCarteiraSub').textContent = totInv ? ((totInv/c.totalCapital)*100).toFixed(1)+'% alocado' : '';
   const gEl = document.getElementById('cGanho');
@@ -573,12 +578,14 @@ function renderDash(){
 }
 
 function renderAllocChart(c,invs){
-  const vals = {variavel:0,fixo:0,titulos:0,imoveis:0,reserva:+(c.emergencyReserve||0)};
+  const allCats=getAllCats(c);
+  const vals={};
+  allCats.forEach(cat=>vals[cat.key]=0);
   invs.forEach(i=>{ if(vals[i.category]!==undefined) vals[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
-  const keys = Object.keys(vals);
+  const keys  = allCats.map(cat=>cat.key).filter(k=>vals[k]>0);
   const data  = keys.map(k=>vals[k]);
-  const colors= keys.map(k=>CAT[k]?.color||'#888');
-  const labels= keys.map(k=>CAT[k]?.label||k);
+  const colors= keys.map(k=>getCatInfo(k,c).color);
+  const labels= keys.map(k=>getCatLabel(k,c));
   if(allocChart) allocChart.destroy();
   allocChart = new Chart(document.getElementById('allocChart'),{
     type:'doughnut',
@@ -588,23 +595,20 @@ function renderAllocChart(c,invs){
 }
 
 function renderAllocBars(c,invs){
-  const portfolio = Math.max(1,(+c.totalCapital||0)-(+c.emergencyReserve||0));
+  const capital = Math.max(1,+c.totalCapital||0);
   const tgt = c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
-  const act = {variavel:0,fixo:0,titulos:0,imoveis:0};
+  const act = {};
+  getAllCats(c).forEach(cat=>act[cat.key]=0);
   invs.forEach(i=>{ if(act[i.category]!==undefined) act[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
 
-  const resEm = +c.emergencyReserve||0;
-  const resPct = ((resEm/(+c.totalCapital||1))*100).toFixed(1);
-
-  let html = mkBar('🟣 Reserva de Emergência','reserva',resEm,null,resPct,null);
-  const EMOJIS = {variavel:'🟠',fixo:'🔵',titulos:'🟢',imoveis:'🟡'};
-  ['variavel','fixo','titulos','imoveis'].forEach(cat=>{
-    const t = tgt[cat]||0;
-    const a = act[cat]||0;
-    // Oculta categoria sem meta E sem investimentos
-    if(t === 0 && a === 0) return;
-    const aP = (a/portfolio*100);
-    html += mkBar(EMOJIS[cat]+' '+CAT[cat].label, cat, a, t>0?portfolio*t/100:null, aP, t>0?t:null);
+  let html = '';
+  getAllCats(c).forEach(cat=>{
+    const t = tgt[cat.key]||0;
+    const a = act[cat.key]||0;
+    if(t===0 && a===0) return;
+    const info = getCatInfo(cat.key,c);
+    const aP = (a/capital*100);
+    html += mkBar(info.emoji+' '+getCatLabel(cat.key,c), cat.key, a, t>0?capital*t/100:null, aP, t>0?t:null);
   });
   document.getElementById('allocBars').innerHTML = html || '<div style="font-size:11px;color:var(--muted);padding:10px 0">Nenhuma categoria com meta ou investimento definido.</div>';
 }
@@ -631,7 +635,7 @@ function renderTable(invs){
     const warn= inv.notes&&inv.notes.includes('⚠️')?'<span class="warn"> ⚠️</span>':'';
     return `<tr onclick="openDetail('${inv.id}')">
       <td><div class="inv-name">${inv.name}${inv.ticker&&inv.ticker!==inv.name?` <span style="color:var(--muted);font-size:10px">${inv.ticker}</span>`:''}${warn}</div><div class="inv-sub">${inv.subcat||''}</div></td>
-      <td><span class="badge b-${inv.category}">${CAT[inv.category]?.label||inv.category}</span></td>
+      <td><span class="badge b-${inv.category}">${getCatLabel(inv.category,c)}</span></td>
       <td style="color:var(--muted);font-size:11px">${fD(inv.purchaseDate)}</td>
       <td>${fR(inv2)}</td>
       <td>${fR(cur)}</td>
@@ -705,9 +709,17 @@ function deleteClient(){
 }
 
 // ── INVESTMENT ──
+function updCatDropdown(sel){
+  const c=getC();
+  document.getElementById('iCat').innerHTML=getAllCats(c).map(cat=>
+    `<option value="${cat.key}"${cat.key===sel?' selected':''}>${getCatInfo(cat.key,c).emoji} ${getCatLabel(cat.key,c)}</option>`
+  ).join('');
+  updSubcats();
+}
 function updSubcats(){
+  const c=getC();
   const cat=document.getElementById('iCat').value;
-  document.getElementById('iSubcat').innerHTML=(SUBCATS[cat]||[]).map(s=>`<option>${s}</option>`).join('');
+  document.getElementById('iSubcat').innerHTML=(getCatInfo(cat,c).subcats||['Outro']).map(s=>`<option>${s}</option>`).join('');
 }
 function calcUnit(){
   const q=+document.getElementById('iQty').value, a=+document.getElementById('iAmt').value;
@@ -718,8 +730,7 @@ function openAddInv(){
   document.getElementById('eInvId').value='';
   ['iName','iTicker','iAmt','iQty','iUnit','iCurr','iNotes'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('iDate').value=today();
-  document.getElementById('iCat').value='variavel';
-  updSubcats(); openM('mInv');
+  updCatDropdown('variavel'); openM('mInv');
 }
 function saveInv(){
   const c=getC(); if(!c) return;
@@ -757,7 +768,7 @@ function openDetail(invId){
   const divs=totDiv(inv);
 
   document.getElementById('dName').textContent=inv.name+(inv.ticker&&inv.ticker!==inv.name?' ('+inv.ticker+')':'');
-  document.getElementById('dBadge').innerHTML=`<span class="badge b-${inv.category}">${CAT[inv.category]?.label||inv.category}</span>${inv.subcat?` <span style="font-size:10px;color:var(--muted);margin-left:6px">${inv.subcat}</span>`:''}`;
+  document.getElementById('dBadge').innerHTML=`<span class="badge b-${inv.category}">${getCatLabel(inv.category,c)}</span>${inv.subcat?` <span style="font-size:10px;color:var(--muted);margin-left:6px">${inv.subcat}</span>`:''}`;
   document.getElementById('dInvested').textContent=fR(inv2);
   document.getElementById('dQty').textContent=inv.quantity?`${inv.quantity} un. · ${fR(inv.pricePerUnit||0)}/un`:'';
   document.getElementById('dCurrent').textContent=fR(cur);
@@ -827,7 +838,7 @@ function editInv(){
   document.getElementById('eInvId').value=inv.id;
   document.getElementById('iName').value=inv.name;
   document.getElementById('iTicker').value=inv.ticker||'';
-  document.getElementById('iCat').value=inv.category; updSubcats();
+  updCatDropdown(inv.category);
   document.getElementById('iSubcat').value=inv.subcat||'';
   document.getElementById('iDate').value=inv.purchaseDate||'';
   document.getElementById('iAmt').value=inv.amountInvested||'';
@@ -878,11 +889,12 @@ function deleteDiv(divId){
 
 // ══ METAS DE ALOCAÇÃO ══
 const META_CATS = [
-  {key:'variavel', label:'🟠 Renda Variável',   color:'#f97316'},
-  {key:'fixo',     label:'🔵 Renda Fixa',        color:'#60a5fa'},
-  {key:'titulos',  label:'🟢 Títulos Públicos',  color:'#4ade80'},
-  {key:'imoveis',  label:'🟡 Imóveis',            color:'#fbbf24'},
+  {key:'variavel', label:'Renda Variável',   color:'#f97316', emoji:'🟠'},
+  {key:'fixo',     label:'Renda Fixa',        color:'#60a5fa', emoji:'🔵'},
+  {key:'titulos',  label:'Títulos Públicos',  color:'#4ade80', emoji:'🟢'},
+  {key:'imoveis',  label:'Imóveis',            color:'#fbbf24', emoji:'🟡'},
 ];
+function getCatLabel(key,c){ return (c?.categoryLabels?.[key]) || CAT[key]?.label || key; }
 const PRESETS_META = {
   conservador: {variavel:5,  fixo:55, titulos:30, imoveis:10},
   moderado:    {variavel:20, fixo:40, titulos:25, imoveis:15},
@@ -898,38 +910,98 @@ function openMetas(){
   const resPct=c.totalCapital?(resEm/c.totalCapital*100).toFixed(1):0;
 
   document.getElementById('metaClientInfo').textContent=
-    `Capital: ${fR(c.totalCapital)} · Carteira (sem reserva): ${fR(portfolio)}`;
-  document.getElementById('metaReservaInfo').textContent=
-    `Atual: ${fR(resEm)} (${resPct}% do capital)`;
+    `Capital: ${fR(c.totalCapital)}`;
 
-  document.getElementById('metaRows').innerHTML=META_CATS.map(cat=>`
-    <div class="meta-row">
-      <div class="meta-cat-label" style="color:${cat.color}">${cat.label}</div>
-      <div class="meta-pct-wrap">
-        <input type="number" id="m_${cat.key}" value="${t[cat.key]||0}" min="0" max="100" oninput="calcMetaValues()">
-        <div class="meta-pct-sfx">%</div>
-      </div>
-      <div class="meta-rval" id="mr_${cat.key}">
-        <strong>${fR(portfolio*(t[cat.key]||0)/100)}</strong>
-        de ${fR(portfolio)}
-      </div>
-    </div>
-  `).join('');
-
+  renderMetaRows(c);
   document.getElementById('metaNotes').value=c.notes||'';
   calcMetaValues();
   openM('mMetas');
 }
 
+function renderMetaRows(c){
+  const t=c.allocationTargets||{};
+  const capital=+c.totalCapital||0;
+  const allCats=getAllCats(c);
+  let html=allCats.map(cat=>{
+    const info=getCatInfo(cat.key,c);
+    const removeBtn=cat.isDefault?
+      `<span title="Categoria padrão (não removível)" style="color:var(--muted2);font-size:14px;padding:4px">🔒</span>`:
+      `<button onclick="removeMetaCat('${cat.key}')" title="Remover categoria" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px;color:#f87171">✕</button>`;
+    return `<div class="meta-row" style="grid-template-columns:1fr 90px 1fr 28px" id="mrow_${cat.key}">
+      <div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Nome</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">${info.emoji}</span>
+          <input type="text" id="ml_${cat.key}" value="${info.label}"
+            style="background:transparent;border:none;border-bottom:1px solid var(--border);color:${info.color};font-size:12px;font-weight:600;width:100%;outline:none;padding:2px 4px;">
+        </div>
+      </div>
+      <div class="meta-pct-wrap">
+        <input type="number" id="m_${cat.key}" value="${t[cat.key]||0}" min="0" max="100" oninput="calcMetaValues()">
+        <div class="meta-pct-sfx">%</div>
+      </div>
+      <div class="meta-rval" id="mr_${cat.key}">
+        <strong>${fR(capital*(t[cat.key]||0)/100)}</strong> de ${fR(capital)}
+      </div>
+      <div style="display:flex;align-items:center">${removeBtn}</div>
+    </div>`;
+  }).join('');
+
+  // Form para adicionar categoria
+  html+=`<div id="addCatForm" style="display:none;background:var(--surface2);border:1px dashed var(--border);border-radius:9px;padding:12px;margin-top:8px">
+    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Nova Categoria</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:2;min-width:100px"><label style="font-size:10px;color:var(--muted)">Nome</label>
+        <input id="newCatName" class="fc" placeholder="Ex: Cripto" style="margin-top:4px"></div>
+      <div><label style="font-size:10px;color:var(--muted)">Emoji</label>
+        <select id="newCatEmoji" class="fc" style="margin-top:4px;width:70px">
+          ${CAT_EMOJIS.map(e=>`<option>${e}</option>`).join('')}
+        </select></div>
+      <div><label style="font-size:10px;color:var(--muted)">Cor</label>
+        <select id="newCatColor" class="fc" style="margin-top:4px;width:80px">
+          ${CAT_PALETTE.map(col=>`<option value="${col}" style="background:${col}">${col}</option>`).join('')}
+        </select></div>
+      <button class="btn btn-green btn-sm" onclick="confirmAddMetaCat()">+ Adicionar</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('addCatForm').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+  <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="document.getElementById('addCatForm').style.display='block';this.style.display='none'">
+    ➕ Adicionar tipo de investimento
+  </button>`;
+
+  document.getElementById('metaRows').innerHTML=html;
+}
+
+function removeMetaCat(key){
+  const c=getC(); if(!c) return;
+  if(!confirm('Remover esta categoria? Os investimentos já registrados nela não serão apagados.')) return;
+  c.customCategories=(c.customCategories||[]).filter(cat=>cat.key!==key);
+  // Remove da meta
+  if(c.allocationTargets) delete c.allocationTargets[key];
+  renderMetaRows(c); calcMetaValues();
+}
+
+function confirmAddMetaCat(){
+  const c=getC(); if(!c) return;
+  const name=document.getElementById('newCatName').value.trim();
+  if(!name){ alert('Informe o nome.'); return; }
+  const emoji=document.getElementById('newCatEmoji').value;
+  const color=document.getElementById('newCatColor').value;
+  const key='cat_'+name.toLowerCase().replace(/\s+/g,'_')+Date.now().toString(36);
+  c.customCategories=c.customCategories||[];
+  c.customCategories.push({key,label:name,color,emoji,isDefault:false,subcats:['Outro']});
+  renderMetaRows(c); calcMetaValues();
+}
+
 function calcMetaValues(){
   const c=getC(); if(!c) return;
-  const portfolio=(+c.totalCapital||0)-(+c.emergencyReserve||0);
+  const capital=+c.totalCapital||0;
   let total=0;
-  META_CATS.forEach(cat=>{
+  getAllCats(c).forEach(cat=>{
     const pct=+document.getElementById('m_'+cat.key)?.value||0;
     total+=pct;
     const el=document.getElementById('mr_'+cat.key);
-    if(el) el.innerHTML=`<strong>${fR(portfolio*pct/100)}</strong> de ${fR(portfolio)}`;
+    if(el) el.innerHTML=`<strong>${fR(capital*pct/100)}</strong> de ${fR(capital)}`;
   });
   const msg=document.getElementById('metaMsg');
   if(msg){
@@ -953,17 +1025,21 @@ function saveMetas(){
   const c=getC(); if(!c) return;
   let total=0;
   const targets={};
-  META_CATS.forEach(cat=>{
+  const labels={};
+  const allCats=getAllCats(c);
+  allCats.forEach(cat=>{
     const v=+document.getElementById('m_'+cat.key)?.value||0;
     targets[cat.key]=v; total+=v;
+    const lbl=document.getElementById('ml_'+cat.key)?.value.trim();
+    if(lbl && lbl!==cat.label) labels[cat.key]=lbl;
   });
-  // Categorias zeradas são permitidas; apenas categorias com valor > 0 precisam somar 100%
-  const activeTotal = META_CATS.filter(cat=>targets[cat.key]>0).reduce((s,cat)=>s+targets[cat.key],0);
+  const activeTotal=allCats.filter(cat=>targets[cat.key]>0).reduce((s,cat)=>s+targets[cat.key],0);
   if(activeTotal>0 && activeTotal!==100){
     alert(`As categorias ativas devem somar 100%.\nAtual: ${activeTotal}%\n\nDica: categorias com 0% ficam ocultas automaticamente.`);
     return;
   }
   c.allocationTargets=targets;
+  c.categoryLabels=labels;
   c.notes=document.getElementById('metaNotes').value.trim();
   save(); closeM('mMetas'); renderDash();
 }
