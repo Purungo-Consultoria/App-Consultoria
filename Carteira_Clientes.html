@@ -182,8 +182,6 @@ select.fc option{background:var(--surface);}
         <div class="dash-sub" id="dashSub"></div>
       </div>
       <div class="dash-actions">
-        <button class="btn btn-green btn-sm" id="btnUpdateTD" onclick="updateTD()">↻ Tesouro Direto</button>
-        <button class="btn btn-orange btn-sm" id="btnUpdateBrapi" onclick="updateBrapi()">↻ Ações / FIIs</button>
         <button class="btn btn-primary" onclick="openAddInv()">+ Investimento</button>
         <button class="btn btn-secondary btn-sm" onclick="openEditClient()">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="deleteClient()">Excluir</button>
@@ -198,6 +196,25 @@ select.fc option{background:var(--surface);}
       <div class="card"><div class="card-label">Em Carteira</div><div class="card-value" id="cCarteira"></div><div class="card-sub" id="cCarteiraSub"></div></div>
       <div class="card"><div class="card-label">Ganho / Perda</div><div class="card-value" id="cGanho"></div><div class="card-badge" id="cGanhoPct"></div></div>
       <div class="card"><div class="card-label">Dividendos Recebidos</div><div class="card-value" id="cDivs"></div><div class="card-sub" id="cDivsSub"></div></div>
+    </div>
+    <!-- CARD META DO CLIENTE -->
+    <div id="goalCard" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px 18px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px" id="goalCardLabel">Meta</div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px" id="goalCardTitle"></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted)" id="goalCardSub"></div>
+          <div style="font-size:18px;font-weight:700;margin-top:2px" id="goalCardPct"></div>
+        </div>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+        <div id="goalBar" style="height:100%;border-radius:4px;transition:width .5s;background:linear-gradient(90deg,#3a5fd9,#a78bfa)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px">
+        <span id="goalCurrent"></span><span id="goalTarget"></span>
+      </div>
     </div>
 
     <!-- ALLOCATION -->
@@ -248,7 +265,19 @@ select.fc option{background:var(--surface);}
       </div>
       <div class="alloc-sum" id="allocMsg"></div>
     </div>
-    <div class="frow" style="margin-top:10px"><div class="fg"><label>Observações</label><textarea class="fc" id="cNotes" rows="2" placeholder="Objetivos, perfil de risco..."></textarea></div></div>
+    <div class="frow c2" style="margin-top:10px">
+      <div class="fg"><label>Objetivo Financeiro</label>
+        <select class="fc" id="cGoalType">
+          <option value="">— Nenhum —</option>
+          <option value="renda">Renda Passiva Mensal (R$)</option>
+          <option value="patrimonio">Patrimônio Total (R$)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Valor da Meta (R$)</label>
+        <input class="fc" id="cGoalValue" type="number" placeholder="Ex: 2800">
+      </div>
+    </div>
+    <div class="frow" style="margin-top:6px"><div class="fg"><label>Observações</label><textarea class="fc" id="cNotes" rows="2" placeholder="Objetivos, perfil de risco..."></textarea></div></div>
     <div class="mfooter">
       <button class="btn btn-secondary" onclick="closeM('mClient')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveClient()">Salvar</button>
@@ -398,8 +427,8 @@ select.fc option{background:var(--surface);}
     </div>
 
     <!-- Cabeçalho -->
-    <div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:10px;padding:0 12px 6px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">
-      <div>Nome da Categoria</div><div style="text-align:center">Meta %</div><div>Valor alvo (calculado)</div>
+    <div style="display:grid;grid-template-columns:1fr auto 28px;gap:10px;padding:0 12px 6px;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;">
+      <div>Nome da Categoria</div><div>Meta (% = R$)</div><div></div>
     </div>
 
     <div id="metaRows"></div>
@@ -498,7 +527,8 @@ const CAT = {}; DEFAULT_CATS.forEach(c=>{CAT[c.key]={label:c.label,color:c.color
 const SUBCATS = {}; DEFAULT_CATS.forEach(c=>{SUBCATS[c.key]=c.subcats;});
 
 function getAllCats(c){
-  return [...DEFAULT_CATS,...(c?.customCategories||[])];
+  const hidden=c?.hiddenDefaultCats||[];
+  return [...DEFAULT_CATS.filter(cat=>!hidden.includes(cat.key)),...(c?.customCategories||[])];
 }
 function getCatInfo(key,c){
   const found=getAllCats(c).find(cat=>cat.key===key);
@@ -572,9 +602,46 @@ function renderDash(){
   document.getElementById('cDivs').textContent = fR(totDivs);
   document.getElementById('cDivsSub').textContent = 'Total histórico recebido';
 
+  renderGoalCard(c,invs);
   renderAllocChart(c,invs);
   renderAllocBars(c,invs);
   renderTable(invs);
+}
+
+function renderGoalCard(c,invs){
+  const card=document.getElementById('goalCard');
+  if(!c.goalType||!c.goalValue){ card.style.display='none'; return; }
+  card.style.display='block';
+  const goal=+c.goalValue||0;
+  let current=0, label='', sublabel='';
+  if(c.goalType==='renda'){
+    // Média mensal de dividendos dos últimos 12 meses
+    const now=new Date(), cutoff=new Date(now.getFullYear()-1,now.getMonth(),1);
+    let divSum=0, months=new Set();
+    (invs||[]).forEach(inv=>(inv.dividends||[]).forEach(d=>{
+      const dt=new Date(d.date);
+      if(dt>=cutoff){ divSum+=+(d.amount||0); months.add(d.date.substring(0,7)); }
+    }));
+    const nMonths=Math.max(1,months.size);
+    current=divSum/nMonths;
+    label='Meta: Renda Passiva Mensal';
+    sublabel=`Média últimos ${nMonths} mes${nMonths>1?'es':''}`;
+  } else {
+    current=+c.totalCapital||0;
+    label='Meta: Patrimônio Total';
+    sublabel='Capital registrado';
+  }
+  const pct=Math.min(100,goal>0?current/goal*100:0);
+  const color=pct>=100?'#4ade80':pct>=70?'#fbbf24':'#3a5fd9';
+  document.getElementById('goalCardLabel').textContent=label;
+  document.getElementById('goalCardTitle').textContent=c.goalType==='renda'?`${fR(goal)}/mês`:fR(goal);
+  document.getElementById('goalCardSub').textContent=sublabel;
+  document.getElementById('goalCardPct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('goalCardPct').style.color=color;
+  document.getElementById('goalBar').style.width=pct.toFixed(1)+'%';
+  document.getElementById('goalBar').style.background=`linear-gradient(90deg,${color}88,${color})`;
+  document.getElementById('goalCurrent').textContent='Atual: '+fR(current)+(c.goalType==='renda'?'/mês':'');
+  document.getElementById('goalTarget').textContent='Meta: '+fR(goal)+(c.goalType==='renda'?'/mês':'');
 }
 
 function renderAllocChart(c,invs){
@@ -678,6 +745,8 @@ function openEditClient(){
   document.getElementById('cTotal').value=c.totalCapital;
   document.getElementById('cReservaI').value=c.emergencyReserve||0;
   document.getElementById('cNotes').value=c.notes||'';
+  document.getElementById('cGoalType').value=c.goalType||'';
+  document.getElementById('cGoalValue').value=c.goalValue||'';
   const t=c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
   document.getElementById('aVar').value=t.variavel||0;
   document.getElementById('aFixo').value=t.fixo||0;
@@ -692,6 +761,8 @@ function saveClient(){
   const data={
     name, totalCapital:+document.getElementById('cTotal').value||0,
     emergencyReserve:+document.getElementById('cReservaI').value||0,
+    goalType:document.getElementById('cGoalType').value,
+    goalValue:+document.getElementById('cGoalValue').value||0,
     notes:document.getElementById('cNotes').value.trim(),
     allocationTargets:{variavel:+document.getElementById('aVar').value||0, fixo:+document.getElementById('aFixo').value||0, titulos:+document.getElementById('aTit').value||0, imoveis:+document.getElementById('aImo').value||0}
   };
@@ -918,16 +989,30 @@ function openMetas(){
   openM('mMetas');
 }
 
+function metaValFromPct(key){
+  const c=getC(); const capital=+c.totalCapital||1;
+  const pct=+document.getElementById('m_'+key)?.value||0;
+  const el=document.getElementById('mv_'+key); if(el) el.value=Math.round(capital*pct/100)||'';
+  calcMetaValues();
+}
+function metaPctFromVal(key){
+  const c=getC(); const capital=+c.totalCapital||1;
+  const val=+document.getElementById('mv_'+key)?.value||0;
+  const el=document.getElementById('m_'+key); if(el) el.value=(val/capital*100).toFixed(1);
+  calcMetaValues();
+}
+
 function renderMetaRows(c){
   const t=c.allocationTargets||{};
   const capital=+c.totalCapital||0;
   const allCats=getAllCats(c);
   let html=allCats.map(cat=>{
     const info=getCatInfo(cat.key,c);
-    const removeBtn=cat.isDefault?
-      `<span title="Categoria padrão (não removível)" style="color:var(--muted2);font-size:14px;padding:4px">🔒</span>`:
-      `<button onclick="removeMetaCat('${cat.key}')" title="Remover categoria" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px;color:#f87171">✕</button>`;
-    return `<div class="meta-row" style="grid-template-columns:1fr 90px 1fr 28px" id="mrow_${cat.key}">
+    const pct=t[cat.key]||0;
+    const valR=Math.round(capital*pct/100);
+    const warnTxt=cat.isDefault?`Se remover, investimentos já registrados nesta categoria ficam sem grupo.`:``;
+    const removeBtn=`<button onclick="removeMetaCat('${cat.key}','${cat.isDefault?'1':'0'}')" title="Remover categoria" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px;color:#f87171" tabindex="-1">✕</button>`;
+    return `<div class="meta-row" style="grid-template-columns:1fr auto 28px;gap:10px" id="mrow_${cat.key}">
       <div>
         <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Nome</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -936,12 +1021,16 @@ function renderMetaRows(c){
             style="background:transparent;border:none;border-bottom:1px solid var(--border);color:${info.color};font-size:12px;font-weight:600;width:100%;outline:none;padding:2px 4px;">
         </div>
       </div>
-      <div class="meta-pct-wrap">
-        <input type="number" id="m_${cat.key}" value="${t[cat.key]||0}" min="0" max="100" oninput="calcMetaValues()">
-        <div class="meta-pct-sfx">%</div>
-      </div>
-      <div class="meta-rval" id="mr_${cat.key}">
-        <strong>${fR(capital*(t[cat.key]||0)/100)}</strong> de ${fR(capital)}
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="meta-pct-wrap" style="width:76px">
+          <input type="number" id="m_${cat.key}" value="${pct}" min="0" max="100" step="0.5" oninput="metaValFromPct('${cat.key}')">
+          <div class="meta-pct-sfx">%</div>
+        </div>
+        <span style="color:var(--muted2);font-size:11px">=</span>
+        <div class="meta-pct-wrap" style="width:130px">
+          <div class="meta-pct-sfx" style="border-right:1px solid var(--border);border-left:none;padding:0 6px;font-size:11px">R$</div>
+          <input type="number" id="mv_${cat.key}" value="${valR||''}" step="1000" oninput="metaPctFromVal('${cat.key}')" style="text-align:left;font-size:13px">
+        </div>
       </div>
       <div style="display:flex;align-items:center">${removeBtn}</div>
     </div>`;
@@ -972,10 +1061,18 @@ function renderMetaRows(c){
   document.getElementById('metaRows').innerHTML=html;
 }
 
-function removeMetaCat(key){
+function removeMetaCat(key,isDefault){
   const c=getC(); if(!c) return;
-  if(!confirm('Remover esta categoria? Os investimentos já registrados nela não serão apagados.')) return;
-  c.customCategories=(c.customCategories||[]).filter(cat=>cat.key!==key);
+  const msg=isDefault==='1'
+    ? `Remover a categoria padrão "${getCatLabel(key,c)}"?\n\nOs investimentos já registrados nela continuarão salvos, mas ficarão sem grupo visível.\n\nTem certeza?`
+    : `Remover a categoria "${getCatLabel(key,c)}"? Os investimentos já registrados nela não serão apagados.`;
+  if(!confirm(msg)) return;
+  if(isDefault==='1'){
+    c.hiddenDefaultCats=c.hiddenDefaultCats||[];
+    if(!c.hiddenDefaultCats.includes(key)) c.hiddenDefaultCats.push(key);
+  } else {
+    c.customCategories=(c.customCategories||[]).filter(cat=>cat.key!==key);
+  }
   // Remove da meta
   if(c.allocationTargets) delete c.allocationTargets[key];
   renderMetaRows(c); calcMetaValues();
