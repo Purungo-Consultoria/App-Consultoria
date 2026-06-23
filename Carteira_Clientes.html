@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Carteira — Consultoria Alex Fernando</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -149,15 +150,44 @@ select.fc option{background:var(--surface);}
 .preset-btn:hover{border-color:#3a5fd9;color:#fff;background:rgba(58,95,217,.15);}
 .box-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .btn-icon{padding:4px 10px;font-size:10px;}
+
+/* LOGIN SCREEN */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 44px;width:360px;text-align:center;}
+.login-box .lg-av{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#3a5fd9,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#fff;margin:0 auto 14px;}
+.login-box .lg-title{font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;}
+.login-box .lg-sub{font-size:11px;color:var(--muted);margin-bottom:26px;}
+.login-box input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;width:100%;margin-bottom:10px;transition:border-color .15s;display:block;}
+.login-box input:focus{border-color:#3a5fd9;}
+.login-btn{width:100%;padding:11px;background:#3a5fd9;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .15s;}
+.login-btn:hover{background:#4a6fe9;}
+.login-btn:disabled{background:#2a3a6a;cursor:not-allowed;}
+.login-err{font-size:11px;color:#f87171;margin-top:10px;min-height:16px;}
+.sb-logout{margin:0 8px 8px;padding:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;color:#f87171;font-size:11px;font-weight:600;cursor:pointer;text-align:center;display:none;}
+.sb-logout:hover{background:rgba(248,113,113,.2);}
+.sb-user{margin:6px 8px 0;padding:6px 10px;background:var(--surface);border-radius:8px;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none;}
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="lg-av">AF</div>
+    <div class="lg-title">Purungo Consultoria</div>
+    <div class="lg-sub">Acesso restrito — insira suas credenciais</div>
+    <input id="lgEmail" type="email" placeholder="Email" autocomplete="email">
+    <input id="lgPass" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" id="lgBtn" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="lgErr"></div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <aside id="sidebar">
   <div class="brand">
     <div class="brand-av">AF</div>
-    <div class="brand-name">Alex Fernando</div>
+    <div class="brand-name" id="brandName">Alex Fernando</div>
     <div class="brand-sub">Consultoria de Investimentos</div>
     <div id="syncStatus" style="margin-top:7px;font-size:10px;padding:3px 8px;border-radius:20px;display:inline-block;background:rgba(107,113,148,.2);color:var(--muted)">⏳ Carregando...</div>
   </div>
@@ -166,6 +196,8 @@ select.fc option{background:var(--surface);}
     <div id="clientList"></div>
   </div>
   <div class="sb-btn" id="sbAddBtn">+ Novo Cliente</div>
+  <div class="sb-user" id="sbUser"></div>
+  <div class="sb-logout" id="sbLogout" onclick="doLogout()">⏏ Sair</div>
 </aside>
 
 <!-- MAIN -->
@@ -181,7 +213,7 @@ select.fc option{background:var(--surface);}
         <div class="dash-title" id="dashName"></div>
         <div class="dash-sub" id="dashSub"></div>
       </div>
-      <div class="dash-actions">
+      <div class="dash-actions" id="dashActions">
         <button class="btn btn-primary" onclick="openAddInv()">+ Investimento</button>
         <button class="btn btn-secondary btn-sm" onclick="openEditClient()">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="deleteClient()">Excluir</button>
@@ -278,6 +310,7 @@ select.fc option{background:var(--surface);}
       </div>
     </div>
     <div class="frow" style="margin-top:6px"><div class="fg"><label>Observações</label><textarea class="fc" id="cNotes" rows="2" placeholder="Objetivos, perfil de risco..."></textarea></div></div>
+    <div class="frow"><div class="fg"><label>Email do Cliente (para acesso ao site)</label><input class="fc" id="cEmail" type="email" placeholder="email@exemplo.com"></div></div>
     <div class="mfooter">
       <button class="btn btn-secondary" onclick="closeM('mClient')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveClient()">Salvar</button>
@@ -452,6 +485,68 @@ select.fc option{background:var(--surface);}
 
 
 <script>
+// ══ AUTH ══
+const ADMIN_EMAIL = 'alexfas8894@gmail.com';
+let currentUser  = null;
+let sbAuthClient = null;
+
+async function initAuth(){
+  const { createClient } = window.supabase;
+  sbAuthClient = createClient(
+    'https://itgtqhwsjmanryfubmtq.supabase.co',
+    'sb_publishable_d_ePGYsumcrCfhdDDFSvkg_DpUNCV2x',
+    { auth:{ persistSession:true, autoRefreshToken:true } }
+  );
+
+  const { data:{ session } } = await sbAuthClient.auth.getSession();
+  if(session){ currentUser=session.user; showApp(); }
+  else { showLoginScreen(); }
+
+  sbAuthClient.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'){ currentUser=session.user; showApp(); }
+    else if(event==='SIGNED_OUT'){ currentUser=null; showLoginScreen(); }
+  });
+}
+
+async function doLogin(){
+  const email = document.getElementById('lgEmail').value.trim();
+  const pass  = document.getElementById('lgPass').value;
+  const btn   = document.getElementById('lgBtn');
+  const err   = document.getElementById('lgErr');
+  if(!email||!pass){ err.textContent='Preencha email e senha.'; return; }
+  btn.disabled=true; btn.textContent='Entrando...'; err.textContent='';
+  const { error } = await sbAuthClient.auth.signInWithPassword({ email, password:pass });
+  if(error){ err.textContent='Email ou senha incorretos.'; btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function doLogout(){
+  await sbAuthClient.auth.signOut();
+}
+
+function isAdmin(){ return currentUser?.email?.toLowerCase()===ADMIN_EMAIL.toLowerCase(); }
+
+function showLoginScreen(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('sidebar').style.display='none';
+  document.getElementById('main').style.display='none';
+}
+
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('sidebar').style.display='flex';
+  document.getElementById('main').style.display='flex';
+  // Nome no topo
+  document.getElementById('brandName').textContent = isAdmin() ? 'Alex Fernando' : 'Minha Carteira';
+  // Email logado
+  const sbUser=document.getElementById('sbUser');
+  sbUser.style.display='block'; sbUser.textContent='👤 '+currentUser.email;
+  // Logout
+  document.getElementById('sbLogout').style.display='block';
+  // Botão novo cliente só para admin
+  document.getElementById('sbAddBtn').style.display = isAdmin()?'block':'none';
+  init();
+}
+
 // ══ CONFIG ══
 const BRAPI_KEY = 'uRQFoMMR936cyZaNR8kKZD';
 const STORAGE  = 'af_portfolio_v3';
@@ -558,8 +653,11 @@ function totDiv(inv){ return (inv.dividends||[]).reduce((s,d)=>s+(+d.amount||0),
 // ══ RENDER ══
 function renderSidebar(){
   const list = document.getElementById('clientList');
-  if(!state.clients.length){ list.innerHTML='<div style="padding:8px 8px;font-size:11px;color:var(--muted2);text-align:center">Nenhum cliente</div>'; return; }
-  list.innerHTML = state.clients.map((c,i)=>{
+  const clients = isAdmin()
+    ? state.clients
+    : state.clients.filter(c=>c.clientEmail && c.clientEmail===currentUser?.email?.toLowerCase());
+  if(!clients.length){ list.innerHTML='<div style="padding:8px 8px;font-size:11px;color:var(--muted2);text-align:center">Nenhum portfólio vinculado</div>'; return; }
+  list.innerHTML = clients.map((c,i)=>{
     const init = c.name.split(' ').slice(0,2).map(w=>w[0].toUpperCase()).join('');
     const col = AVCOLORS[i%AVCOLORS.length];
     return `<div class="client-item${c.id===state.activeId?' active':''}" onclick="selClient('${c.id}')">
@@ -579,6 +677,7 @@ function renderDash(){
 
   document.getElementById('dashName').textContent = c.name;
   document.getElementById('dashSub').textContent = `Cliente desde ${fD(c.createdAt)}${c.notes?' · '+c.notes:''}`;
+  document.getElementById('dashActions').style.display = isAdmin() ? 'flex' : 'none';
 
   const invs = c.investments||[];
   const totInv  = invs.reduce((s,i)=>s+(+i.amountInvested||0),0);
@@ -746,6 +845,7 @@ function openEditClient(){
   document.getElementById('cTotal').value=c.totalCapital;
   document.getElementById('cReservaI').value=c.emergencyReserve||0;
   document.getElementById('cNotes').value=c.notes||'';
+  document.getElementById('cEmail').value=c.clientEmail||'';
   document.getElementById('cGoalType').value=c.goalType||'';
   document.getElementById('cGoalValue').value=c.goalValue||'';
   const t=c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
@@ -765,6 +865,7 @@ function saveClient(){
     goalType:document.getElementById('cGoalType').value,
     goalValue:+document.getElementById('cGoalValue').value||0,
     notes:document.getElementById('cNotes').value.trim(),
+    clientEmail:document.getElementById('cEmail').value.trim().toLowerCase(),
     allocationTargets:{variavel:+document.getElementById('aVar').value||0, fixo:+document.getElementById('aFixo').value||0, titulos:+document.getElementById('aTit').value||0, imoveis:+document.getElementById('aImo').value||0}
   };
   if(editId){ Object.assign(state.clients.find(c=>c.id===editId)||{},data); }
@@ -1382,7 +1483,11 @@ function applyState(loaded){
   // Migração: atualiza dados de Helena com extrato BB (08/05/2026) e FIIs Nubank (21/04/2026)
   migrateHelenaMaio2026();
 
-  if(!state.activeId || !state.clients.find(c=>c.id===state.activeId)){
+  if(!isAdmin()){
+    // Clientes veem apenas a própria carteira
+    const myClient = state.clients.find(c=>c.clientEmail && c.clientEmail===currentUser?.email?.toLowerCase());
+    state.activeId = myClient?.id || null;
+  } else if(!state.activeId || !state.clients.find(c=>c.id===state.activeId)){
     state.activeId = state.clients[0]?.id || null;
   }
 
@@ -1414,7 +1519,7 @@ async function init(){
   applyState(loaded);
 }
 
-init();
+initAuth();
 </script>
 </body>
 </html>
