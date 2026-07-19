@@ -393,6 +393,7 @@ select.fc option{background:var(--surface);}
         <div id="dBadge" style="margin-top:5px"></div>
       </div>
       <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn btn-secondary btn-sm" onclick="openCompraModal()">+ Compra</button>
         <button class="btn btn-secondary btn-sm" onclick="openDivModal()">+ Rendimento</button>
         <button class="btn btn-secondary btn-sm" onclick="editInv()">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="deleteInv()">Excluir</button>
@@ -424,6 +425,15 @@ select.fc option{background:var(--surface);}
       <canvas id="perfChart" height="150"></canvas>
     </div>
 
+    <!-- Histórico de Compras -->
+    <div class="chart-box">
+      <div class="div-hd">
+        <div class="chart-box-title" style="margin-bottom:0">Histórico de Compras</div>
+        <button class="btn btn-secondary btn-sm" onclick="openCompraModal()">+ Compra</button>
+      </div>
+      <div id="comprasTableWrap"></div>
+    </div>
+
     <!-- Dividendos -->
     <div class="chart-box">
       <div class="div-hd">
@@ -433,6 +443,28 @@ select.fc option{background:var(--surface);}
     </div>
 
     <div id="dNotes" style="font-size:11px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);"></div>
+  </div>
+</div>
+
+
+<!-- MODAL: NOVA COMPRA -->
+<div class="overlay" id="mCompra">
+  <div class="modal" style="width:440px">
+    <div class="mhd"><div class="mtitle">📈 Nova Compra</div><button class="mclose" onclick="closeM('mCompra')">✕</button></div>
+    <input type="hidden" id="eCompraId">
+    <div class="frow c2">
+      <div class="fg"><label>Data da Compra</label><input class="fc" id="pDate" type="date"></div>
+      <div class="fg"><label>Valor Total (R$)</label><input class="fc" id="pAmt" type="number" placeholder="0,00" oninput="calcPUnit()"></div>
+    </div>
+    <div class="frow c2">
+      <div class="fg"><label>Quantidade</label><input class="fc" id="pQty" type="number" placeholder="—" oninput="calcPUnit()"></div>
+      <div class="fg"><label>Preço Unitário (calculado)</label><input class="fc" id="pUnit" type="number" placeholder="—" readonly style="opacity:.6"></div>
+    </div>
+    <div class="frow"><div class="fg"><label>Notas (opcional)</label><input class="fc" id="pNotes" placeholder="Ex: Aporte mensal, Reinvestimento..."></div></div>
+    <div class="mfooter">
+      <button class="btn btn-secondary" onclick="closeM('mCompra')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCompra()">Registrar Compra</button>
+    </div>
   </div>
 </div>
 
@@ -635,6 +667,17 @@ function getCatLabel(key,c){ return getCatInfo(key,c).label; }
 const AVCOLORS=['#3a5fd9','#a78bfa','#4ade80','#f97316','#f472b6','#22d3ee','#fb7185','#34d399'];
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ══ COMPRAS (múltiplas compras por ativo) ══
+function getInvPurchases(inv){
+  if(inv.purchases && inv.purchases.length) return inv.purchases;
+  // Backward compat: trata campos antigos como primeira compra
+  return [{id:'p0',date:inv.purchaseDate,amount:+inv.amountInvested||0,qty:+inv.quantity||+inv.qty||0,unitPrice:+inv.pricePerUnit||0,notes:''}];
+}
+function getInvTotal(inv){ return getInvPurchases(inv).reduce((s,p)=>s+(+p.amount||0),0); }
+function getInvQty(inv){ return getInvPurchases(inv).reduce((s,p)=>s+(+p.qty||0),0); }
+function getInvAvgPrice(inv){ const q=getInvQty(inv); return q>0?getInvTotal(inv)/q:0; }
+function getInvCurr(inv){ return +(inv.currentValue)||getInvTotal(inv); }
 function save(){
   localStorage.setItem(STORAGE, JSON.stringify(state));
   setSyncStatus('syncing','⏳ Sincronizando...');
@@ -680,14 +723,14 @@ function renderDash(){
   document.getElementById('dashActions').style.display = isAdmin() ? 'flex' : 'none';
 
   const invs = c.investments||[];
-  const totInv  = invs.reduce((s,i)=>s+(+i.amountInvested||0),0);
-  const totCurr = invs.reduce((s,i)=>s+(+(i.currentValue??i.amountInvested)||0),0);
+  const totInv  = invs.reduce((s,i)=>s+getInvTotal(i),0);
+  const totCurr = invs.reduce((s,i)=>s+getInvCurr(i),0);
   const totDivs = invs.reduce((s,i)=>s+totDiv(i),0);
   const gain = totCurr - totInv;
   const gainPct = totInv>0 ? gain/totInv*100 : 0;
 
   document.getElementById('cTotal').textContent = fR(c.totalCapital);
-  const reservaTotal=(invs||[]).filter(i=>i.category==='reserva').reduce((s,i)=>s+(+(i.currentValue??i.amountInvested)||0),0)||(+c.emergencyReserve||0);
+  const reservaTotal=(invs||[]).filter(i=>i.category==='reserva').reduce((s,i)=>s+getInvCurr(i),0)||(+c.emergencyReserve||0);
   document.getElementById('cReserva').textContent = fR(reservaTotal);
   document.getElementById('cReservaSub').textContent = c.totalCapital ? (reservaTotal/c.totalCapital*100).toFixed(1)+'% do capital' : '';
   document.getElementById('cCarteira').textContent = fR(totCurr);
@@ -747,7 +790,7 @@ function renderAllocChart(c,invs){
   const allCats=getAllCats(c);
   const vals={};
   allCats.forEach(cat=>vals[cat.key]=0);
-  invs.forEach(i=>{ if(vals[i.category]!==undefined) vals[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
+  invs.forEach(i=>{ if(vals[i.category]!==undefined) vals[i.category]+=getInvCurr(i); });
   const keys  = allCats.map(cat=>cat.key).filter(k=>vals[k]>0);
   const data  = keys.map(k=>vals[k]);
   const colors= keys.map(k=>getCatInfo(k,c).color);
@@ -765,7 +808,7 @@ function renderAllocBars(c,invs){
   const tgt = c.allocationTargets||{variavel:2,fixo:20,titulos:0,imoveis:78};
   const act = {};
   getAllCats(c).forEach(cat=>act[cat.key]=0);
-  invs.forEach(i=>{ if(act[i.category]!==undefined) act[i.category]+=(+(i.currentValue??i.amountInvested)||0); });
+  invs.forEach(i=>{ if(act[i.category]!==undefined) act[i.category]+=getInvCurr(i); });
 
   let html = '';
   getAllCats(c).forEach(cat=>{
@@ -794,8 +837,8 @@ function renderTable(invs){
   const tbody = document.getElementById('invBody');
   if(!invs.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty-row">Nenhum investimento. Clique em "+ Investimento".</td></tr>`; return; }
   tbody.innerHTML = invs.map(inv=>{
-    const cur = +(inv.currentValue??inv.amountInvested)||0;
-    const inv2= +(inv.amountInvested)||0;
+    const cur = getInvCurr(inv);
+    const inv2= getInvTotal(inv);
     const gain= cur-inv2, gp= inv2>0?gain/inv2*100:0;
     const gs  = (gain>=0?'+':'')+gp.toFixed(2)+'%';
     const divs= totDiv(inv);
@@ -935,17 +978,19 @@ function openDetail(invId){
   const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
   activeInvId=invId;
 
-  const cur=+(inv.currentValue??inv.amountInvested)||0;
-  const inv2=+(inv.amountInvested)||0;
+  const cur=getInvCurr(inv);
+  const inv2=getInvTotal(inv);
+  const qty=getInvQty(inv);
+  const pm=getInvAvgPrice(inv);
   const gain=cur-inv2, gp=inv2>0?gain/inv2*100:0;
   const divs=totDiv(inv);
 
   document.getElementById('dName').textContent=inv.name+(inv.ticker&&inv.ticker!==inv.name?' ('+inv.ticker+')':'');
   document.getElementById('dBadge').innerHTML=`<span class="badge b-${inv.category}">${getCatLabel(inv.category,c)}</span>${inv.subcat?` <span style="font-size:10px;color:var(--muted);margin-left:6px">${inv.subcat}</span>`:''}`;
   document.getElementById('dInvested').textContent=fR(inv2);
-  document.getElementById('dQty').textContent=inv.quantity?`${inv.quantity} un. · ${fR(inv.pricePerUnit||0)}/un`:'';
+  document.getElementById('dQty').textContent=qty?`${qty} un. · PM: ${fR(pm)}/un`:'';
   document.getElementById('dCurrent').textContent=fR(cur);
-  document.getElementById('dCurrSub').textContent=`Compra: ${fD(inv.purchaseDate)}`;
+  document.getElementById('dCurrSub').textContent=getInvPurchases(inv).length>1?`${getInvPurchases(inv).length} compras`:`Compra: ${fD(inv.purchaseDate||getInvPurchases(inv)[0]?.date)}`;
   const gEl=document.getElementById('dGain');
   gEl.textContent=(gain>=0?'+':'')+gp.toFixed(2)+'%';
   gEl.className='dkpi-val '+(gain>=0?'pos':'neg');
@@ -957,6 +1002,7 @@ function openDetail(invId){
   document.getElementById('dNotes').textContent=inv.notes?'📝 '+inv.notes:'';
 
   renderPerfChart(inv);
+  renderComprasTable(inv);
   renderDivTable(inv);
   openM('mDetail');
 }
@@ -965,7 +1011,7 @@ function renderPerfChart(inv){
   const hist=(inv.priceHistory||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
   const labels=hist.map(h=>fD(h.date));
   const vals=hist.map(h=>h.value);
-  const inv2=+(inv.amountInvested)||0;
+  const inv2=getInvTotal(inv);
   const color=CAT[inv.category]?.color||'#60a5fa';
   if(perfChart) perfChart.destroy();
   perfChart=new Chart(document.getElementById('perfChart'),{
@@ -978,6 +1024,71 @@ function renderPerfChart(inv){
       plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}},
       scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194'}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
   });
+}
+
+function renderComprasTable(inv){
+  const purchases=getInvPurchases(inv);
+  const wrap=document.getElementById('comprasTableWrap');
+  const total=getInvTotal(inv), qty=getInvQty(inv), pm=getInvAvgPrice(inv);
+  const pmLine=qty>0?`<div style="text-align:right;font-size:11px;color:var(--muted);padding:6px 8px 0">Total: <strong style="color:#fff">${fR(total)}</strong> · ${qty} un. · Preço Médio: <strong style="color:var(--titulos)">${fR(pm)}/un</strong></div>`:'';
+  if(!purchases.length){ wrap.innerHTML='<div style="text-align:center;padding:18px;font-size:12px;color:var(--muted)">Nenhuma compra registrada.</div>'; return; }
+  const rows=purchases.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(p=>`<tr>
+    <td>${fD(p.date)}</td>
+    <td style="color:#fff;font-weight:600">${fR(+p.amount||0)}</td>
+    <td style="color:var(--muted)">${p.qty||'—'} un.</td>
+    <td style="color:var(--muted)">${p.qty&&p.amount?fR((+p.amount)/(+p.qty))+'/un':'—'}</td>
+    <td style="color:var(--muted2)">${p.notes||'—'}</td>
+    <td>${p.id==='p0'?'':(`<button class="btn btn-danger btn-sm" onclick="deleteCompra('${p.id}')">✕</button>`)}</td>
+  </tr>`).join('');
+  wrap.innerHTML=`<table class="div-table">
+    <thead><tr><th>Data</th><th>Valor</th><th>Qtd</th><th>Preço Unit.</th><th>Notas</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>${pmLine}`;
+}
+
+function openCompraModal(){
+  document.getElementById('eCompraId').value=activeInvId;
+  document.getElementById('pDate').value=today();
+  document.getElementById('pAmt').value='';
+  document.getElementById('pQty').value='';
+  document.getElementById('pUnit').value='';
+  document.getElementById('pNotes').value='';
+  closeM('mDetail');
+  openM('mCompra');
+}
+
+function calcPUnit(){
+  const amt=+document.getElementById('pAmt').value||0;
+  const qty=+document.getElementById('pQty').value||0;
+  document.getElementById('pUnit').value=qty>0?(amt/qty).toFixed(4):'';
+}
+
+function saveCompra(){
+  const invId=document.getElementById('eCompraId').value;
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
+  const amt=+document.getElementById('pAmt').value||0;
+  const qty=+document.getElementById('pQty').value||0;
+  const date=document.getElementById('pDate').value;
+  if(!amt||!date){ alert('Informe pelo menos valor e data.'); return; }
+  // Migra para purchases[] se ainda usa formato antigo
+  if(!inv.purchases || !inv.purchases.length){
+    inv.purchases=[{id:uid(),date:inv.purchaseDate,amount:+inv.amountInvested||0,qty:+inv.quantity||+inv.qty||0,unitPrice:+inv.pricePerUnit||0,notes:'Compra inicial'}];
+  }
+  inv.purchases.push({id:uid(),date,amount:amt,qty,unitPrice:qty?+(amt/qty).toFixed(4):0,notes:document.getElementById('pNotes').value.trim()});
+  // Atualiza amountInvested para compatibilidade
+  inv.amountInvested=getInvTotal(inv);
+  if(qty) inv.quantity=getInvQty(inv);
+  save(); closeM('mCompra'); openDetail(invId); renderDash();
+}
+
+function deleteCompra(pId){
+  if(!confirm('Remover esta compra?')) return;
+  const c=getC(); const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  inv.purchases=(inv.purchases||[]).filter(p=>p.id!==pId);
+  if(inv.purchases.length===0) delete inv.purchases;
+  else inv.amountInvested=getInvTotal(inv);
+  save(); openDetail(activeInvId); renderDash();
 }
 
 function renderDivTable(inv){
