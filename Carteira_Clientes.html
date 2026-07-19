@@ -223,11 +223,11 @@ select.fc option{background:var(--surface);}
 
     <!-- KPI CARDS -->
     <div class="cards-row">
-      <div class="card"><div class="card-label">Capital Total</div><div class="card-value" id="cTotal"></div><div class="card-sub">Patrimônio registrado</div></div>
-      <div class="card"><div class="card-label">Reserva Emergência</div><div class="card-value" id="cReserva"></div><div class="card-sub" id="cReservaSub"></div></div>
-      <div class="card"><div class="card-label">Em Carteira</div><div class="card-value" id="cCarteira"></div><div class="card-sub" id="cCarteiraSub"></div></div>
+      <div class="card"><div class="card-label">Patrimônio Atual</div><div class="card-value" id="cPatrAtual"></div><div class="card-sub" id="cPatrAtualSub"></div></div>
+      <div class="card"><div class="card-label">Patrimônio Investido</div><div class="card-value" id="cPatrInv"></div><div class="card-sub" id="cPatrInvSub"></div></div>
       <div class="card"><div class="card-label">Ganho / Perda</div><div class="card-value" id="cGanho"></div><div class="card-badge" id="cGanhoPct"></div></div>
       <div class="card"><div class="card-label">Dividendos Recebidos</div><div class="card-value" id="cDivs"></div><div class="card-sub" id="cDivsSub"></div></div>
+      <div class="card" id="cMetaCard"><div class="card-label" id="cMetaLabel">% da Meta</div><div class="card-value" id="cMetaPct" style="font-size:22px;font-weight:800"></div><div class="card-sub" id="cMetaSub"></div></div>
     </div>
     <!-- CARD META DO CLIENTE -->
     <div id="goalCard" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px 18px;margin-bottom:20px;">
@@ -729,20 +729,52 @@ function renderDash(){
   const gain = totCurr - totInv;
   const gainPct = totInv>0 ? gain/totInv*100 : 0;
 
-  document.getElementById('cTotal').textContent = fR(c.totalCapital);
-  const reservaTotal=(invs||[]).filter(i=>i.category==='reserva').reduce((s,i)=>s+getInvCurr(i),0)||(+c.emergencyReserve||0);
-  document.getElementById('cReserva').textContent = fR(reservaTotal);
-  document.getElementById('cReservaSub').textContent = c.totalCapital ? (reservaTotal/c.totalCapital*100).toFixed(1)+'% do capital' : '';
-  document.getElementById('cCarteira').textContent = fR(totCurr);
-  document.getElementById('cCarteiraSub').textContent = totInv ? ((totInv/c.totalCapital)*100).toFixed(1)+'% alocado' : '';
+  // Patrimônio Atual
+  document.getElementById('cPatrAtual').textContent = fR(totCurr);
+  document.getElementById('cPatrAtualSub').textContent = totInv>0 ? `${((totCurr/totInv-1)*100).toFixed(1)}% sobre o investido` : 'Valor atual dos ativos';
+
+  // Patrimônio Investido
+  document.getElementById('cPatrInv').textContent = fR(totInv);
+  document.getElementById('cPatrInvSub').textContent = invs.length ? `${invs.length} ativo${invs.length>1?'s':''}` : 'Total aplicado';
+
+  // Ganho / Perda
   const gEl = document.getElementById('cGanho');
-  gEl.textContent = fR(Math.abs(gain));
+  gEl.textContent = (gain>=0?'+':'-')+fR(Math.abs(gain));
   gEl.className = 'card-value '+(gain>=0?'pos':'neg');
   const gpEl = document.getElementById('cGanhoPct');
-  gpEl.textContent = (gain>=0?'+':'-')+gainPct.toFixed(2)+'% sobre investido';
+  gpEl.textContent = (gain>=0?'+':'')+gainPct.toFixed(2)+'% sobre investido';
   gpEl.className = 'card-badge '+(gain>=0?'pos':'neg');
+
+  // Dividendos
   document.getElementById('cDivs').textContent = fR(totDivs);
   document.getElementById('cDivsSub').textContent = 'Total histórico recebido';
+
+  // % da Meta (aposentadoria)
+  const metaEl = document.getElementById('cMetaPct');
+  const metaSub = document.getElementById('cMetaSub');
+  const metaLabel = document.getElementById('cMetaLabel');
+  if(c.goalType==='renda' && c.goalValue){
+    const goalRate = (+c.goalRate||6.15)/100; // taxa anual padrão 6,15%
+    const reqPatrimony = c.goalPatrimony || (+c.goalValue*12/goalRate);
+    const metaPct = reqPatrimony>0 ? (totCurr/reqPatrimony*100) : 0;
+    const color = metaPct>=100?'#4ade80':metaPct>=70?'#fbbf24':'#60a5fa';
+    metaLabel.textContent = `Meta: ${fR(+c.goalValue)}/mês`;
+    metaEl.textContent = metaPct.toFixed(1)+'%';
+    metaEl.style.color = color;
+    metaSub.textContent = `Necessário: ${fR(reqPatrimony)}`;
+  } else if(c.goalType==='patrimonio' && c.goalValue){
+    const metaPct = +c.goalValue>0 ? (totCurr/+c.goalValue*100) : 0;
+    const color = metaPct>=100?'#4ade80':metaPct>=70?'#fbbf24':'#60a5fa';
+    metaLabel.textContent = 'Meta de Patrimônio';
+    metaEl.textContent = metaPct.toFixed(1)+'%';
+    metaEl.style.color = color;
+    metaSub.textContent = `Meta: ${fR(+c.goalValue)}`;
+  } else {
+    metaLabel.textContent = '% da Meta';
+    metaEl.textContent = '—';
+    metaEl.style.color='var(--muted)';
+    metaSub.textContent = 'Defina uma meta no cliente';
+  }
 
   renderGoalCard(c,invs);
   renderAllocChart(c,invs);
