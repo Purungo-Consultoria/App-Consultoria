@@ -801,9 +801,9 @@ function renderGoalCard(c,invs){
     label='Meta: Renda Passiva Mensal';
     sublabel=`Média últimos ${nMonths} mes${nMonths>1?'es':''}`;
   } else {
-    current=+c.totalCapital||0;
+    current=invs.reduce((s,i)=>s+getInvCurr(i),0);
     label='Meta: Patrimônio Total';
-    sublabel='Capital registrado';
+    sublabel='Soma dos ativos atuais';
   }
   const pct=Math.min(100,goal>0?current/goal*100:0);
   const color=pct>=100?'#4ade80':pct>=70?'#fbbf24':'#3a5fd9';
