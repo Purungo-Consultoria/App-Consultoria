@@ -421,7 +421,13 @@ select.fc option{background:var(--surface);}
 
     <!-- Gráfico performance -->
     <div class="chart-box">
-      <div class="chart-box-title">Performance — Histórico de Valor</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="chart-box-title" style="margin-bottom:0">Performance — Histórico de Valor</div>
+        <div style="display:flex;gap:5px">
+          <button id="btnPerfPatr" class="btn btn-primary btn-sm" onclick="setPerfMode('patrimonio')" title="Mostrar apenas o valor patrimonial">📈 Patrimonial</button>
+          <button id="btnPerfTotal" class="btn btn-secondary btn-sm" onclick="setPerfMode('total')" title="Valor patrimonial + dividendos acumulados (retorno total)">💰 + Dividendos</button>
+        </div>
+      </div>
       <canvas id="perfChart" height="150"></canvas>
     </div>
 
@@ -588,7 +594,7 @@ const SB_CHAVE = 'carteira_v3';
 
 // ══ DATA MODEL ══
 let state = { clients:[], activeId:null };
-let perfChart = null, allocChart = null, activeInvId = null;
+let perfChart = null, allocChart = null, activeInvId = null, perfMode = 'patrimonio';
 
 // ══ SYNC STATUS ══
 function setSyncStatus(type, msg){
@@ -1009,6 +1015,11 @@ function openDetail(invId){
   const c=getC(); if(!c) return;
   const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
   activeInvId=invId;
+  perfMode='patrimonio';
+  const bPatr=document.getElementById('btnPerfPatr');
+  const bTotal=document.getElementById('btnPerfTotal');
+  if(bPatr) bPatr.className='btn btn-primary btn-sm';
+  if(bTotal) bTotal.className='btn btn-secondary btn-sm';
 
   const cur=getInvCurr(inv);
   const inv2=getInvTotal(inv);
@@ -1039,21 +1050,50 @@ function openDetail(invId){
   openM('mDetail');
 }
 
+function setPerfMode(mode){
+  perfMode=mode;
+  document.getElementById('btnPerfPatr').className='btn btn-sm '+(mode==='patrimonio'?'btn-primary':'btn-secondary');
+  document.getElementById('btnPerfTotal').className='btn btn-sm '+(mode==='total'?'btn-primary':'btn-secondary');
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  renderPerfChart(inv);
+}
+
 function renderPerfChart(inv){
   const hist=(inv.priceHistory||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
   const labels=hist.map(h=>fD(h.date));
-  const vals=hist.map(h=>h.value);
   const inv2=getInvTotal(inv);
   const color=CAT[inv.category]?.color||'#60a5fa';
+  const divs=(inv.dividends||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+
+  // Valores base (só patrimonial)
+  const baseVals=hist.map(h=>h.value);
+  // Valores com dividendos acumulados até cada data do histórico
+  const totalVals=hist.map(h=>{
+    const cumDiv=divs.filter(d=>d.date<=h.date).reduce((s,d)=>s+(+d.amount||0),0);
+    return h.value+cumDiv;
+  });
+
+  const isTotal=perfMode==='total';
+  const mainVals=isTotal?totalVals:baseVals;
+  const datasets=[
+    {label:isTotal?'Patrimonial + Dividendos':'Valor Patrimonial',data:mainVals,borderColor:color,backgroundColor:color+'22',borderWidth:2.5,pointRadius:4,pointHoverRadius:6,fill:true,tension:.3},
+    {label:'Total Investido',data:Array(labels.length).fill(inv2),borderColor:'#4b5563',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+  ];
+  // Em modo total, mostra linha pontilhada do patrimonial puro para comparação
+  if(isTotal && divs.length){
+    datasets.push({label:'Só Patrimonial',data:baseVals,borderColor:color+'66',borderWidth:1.5,borderDash:[3,3],pointRadius:0,fill:false,tension:.3});
+  }
+
   if(perfChart) perfChart.destroy();
   perfChart=new Chart(document.getElementById('perfChart'),{
     type:'line',
-    data:{labels,datasets:[
-      {label:'Valor',data:vals,borderColor:color,backgroundColor:color+'22',borderWidth:2.5,pointRadius:4,pointHoverRadius:6,fill:true,tension:.3},
-      {label:'Investido',data:Array(labels.length).fill(inv2),borderColor:'#4b5563',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
-    ]},
+    data:{labels,datasets},
     options:{responsive:true,animation:{duration:200},interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}},
+      plugins:{
+        legend:{display:isTotal&&divs.length>0,labels:{color:'#6b7194',font:{size:10},boxWidth:20}},
+        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}
+      },
       scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194'}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
   });
 }
