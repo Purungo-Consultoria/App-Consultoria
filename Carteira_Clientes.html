@@ -361,8 +361,9 @@ select.fc option{background:var(--surface);}
 <!-- MODAL: DIVIDENDO -->
 <div class="overlay" id="mDiv">
   <div class="modal" style="width:420px">
-    <div class="mhd"><div class="mtitle">Registrar Rendimento / Dividendo</div><button class="mclose" onclick="closeM('mDiv')">✕</button></div>
+    <div class="mhd"><div class="mtitle" id="mDivTitle">Registrar Rendimento / Dividendo</div><button class="mclose" onclick="closeM('mDiv')">✕</button></div>
     <input type="hidden" id="eDivInvId">
+    <input type="hidden" id="eDivEditId">
     <div class="frow c2">
       <div class="fg"><label>Data</label><input class="fc" id="dDate" type="date"></div>
       <div class="fg"><label>Valor Recebido (R$)</label><input class="fc" id="dAmt" type="number" placeholder="0,00"></div>
@@ -456,8 +457,9 @@ select.fc option{background:var(--surface);}
 <!-- MODAL: NOVA COMPRA -->
 <div class="overlay" id="mCompra">
   <div class="modal" style="width:440px">
-    <div class="mhd"><div class="mtitle">📈 Nova Compra</div><button class="mclose" onclick="closeM('mCompra')">✕</button></div>
+    <div class="mhd"><div class="mtitle" id="mCompraTitle">📈 Nova Compra</div><button class="mclose" onclick="closeM('mCompra')">✕</button></div>
     <input type="hidden" id="eCompraId">
+    <input type="hidden" id="eCompraEditId">
     <div class="frow c2">
       <div class="fg"><label>Data da Compra</label><input class="fc" id="pDate" type="date"></div>
       <div class="fg"><label>Valor Total (R$)</label><input class="fc" id="pAmt" type="number" placeholder="0,00" oninput="calcPUnit()"></div>
@@ -1092,7 +1094,11 @@ function renderPerfChart(inv){
     options:{responsive:true,animation:{duration:200},interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:isTotal&&divs.length>0,labels:{color:'#6b7194',font:{size:10},boxWidth:20}},
-        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>`  ${i.dataset.label}: ${fR(i.raw)}`}}
+        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>{
+          const pct=inv2>0?(i.raw-inv2)/inv2*100:0;
+          const pctStr=i.datasetIndex===1?'':` (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+          return `  ${i.dataset.label}: ${fR(i.raw)}${pctStr}`;
+        }}}
       },
       scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194'}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
   });
@@ -1110,7 +1116,7 @@ function renderComprasTable(inv){
     <td style="color:var(--muted)">${p.qty||'—'} un.</td>
     <td style="color:var(--muted)">${p.qty&&p.amount?fR((+p.amount)/(+p.qty))+'/un':'—'}</td>
     <td style="color:var(--muted2)">${p.notes||'—'}</td>
-    <td>${p.id==='p0'?'':(`<button class="btn btn-danger btn-sm" onclick="deleteCompra('${p.id}')">✕</button>`)}</td>
+    <td style="display:flex;gap:4px">${p.id==='p0'?'':(`<button class="btn btn-secondary btn-sm" onclick="editCompra('${p.id}')" title="Editar">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteCompra('${p.id}')" title="Excluir">✕</button>`)}</td>
   </tr>`).join('');
   wrap.innerHTML=`<table class="div-table">
     <thead><tr><th>Data</th><th>Valor</th><th>Qtd</th><th>Preço Unit.</th><th>Notas</th><th></th></tr></thead>
@@ -1120,11 +1126,29 @@ function renderComprasTable(inv){
 
 function openCompraModal(){
   document.getElementById('eCompraId').value=activeInvId;
+  document.getElementById('eCompraEditId').value='';
+  document.getElementById('mCompraTitle').textContent='📈 Nova Compra';
   document.getElementById('pDate').value=today();
   document.getElementById('pAmt').value='';
   document.getElementById('pQty').value='';
   document.getElementById('pUnit').value='';
   document.getElementById('pNotes').value='';
+  closeM('mDetail');
+  openM('mCompra');
+}
+
+function editCompra(pId){
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  const p=getInvPurchases(inv).find(p=>p.id===pId); if(!p) return;
+  document.getElementById('eCompraId').value=activeInvId;
+  document.getElementById('eCompraEditId').value=pId;
+  document.getElementById('mCompraTitle').textContent='✏️ Editar Compra';
+  document.getElementById('pDate').value=p.date||today();
+  document.getElementById('pAmt').value=p.amount||'';
+  document.getElementById('pQty').value=p.qty||'';
+  document.getElementById('pNotes').value=p.notes||'';
+  calcPUnit();
   closeM('mDetail');
   openM('mCompra');
 }
@@ -1137,17 +1161,26 @@ function calcPUnit(){
 
 function saveCompra(){
   const invId=document.getElementById('eCompraId').value;
+  const editId=document.getElementById('eCompraEditId').value;
   const c=getC(); if(!c) return;
   const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
   const amt=+document.getElementById('pAmt').value||0;
   const qty=+document.getElementById('pQty').value||0;
   const date=document.getElementById('pDate').value;
+  const notes=document.getElementById('pNotes').value.trim();
   if(!amt||!date){ alert('Informe pelo menos valor e data.'); return; }
   // Migra para purchases[] se ainda usa formato antigo
   if(!inv.purchases || !inv.purchases.length){
     inv.purchases=[{id:uid(),date:inv.purchaseDate,amount:+inv.amountInvested||0,qty:+inv.quantity||+inv.qty||0,unitPrice:+inv.pricePerUnit||0,notes:'Compra inicial'}];
   }
-  inv.purchases.push({id:uid(),date,amount:amt,qty,unitPrice:qty?+(amt/qty).toFixed(4):0,notes:document.getElementById('pNotes').value.trim()});
+  if(editId){
+    // Editar compra existente
+    const p=inv.purchases.find(p=>p.id===editId);
+    if(p){ p.date=date; p.amount=amt; p.qty=qty; p.unitPrice=qty?+(amt/qty).toFixed(4):0; p.notes=notes; }
+  } else {
+    // Nova compra
+    inv.purchases.push({id:uid(),date,amount:amt,qty,unitPrice:qty?+(amt/qty).toFixed(4):0,notes});
+  }
   // Atualiza amountInvested para compatibilidade
   inv.amountInvested=getInvTotal(inv);
   if(qty) inv.quantity=getInvQty(inv);
@@ -1173,7 +1206,7 @@ function renderDivTable(inv){
       <td>${fD(d.date)}</td><td>${d.type}</td>
       <td style="color:var(--titulos)">${fR(d.amount)}</td>
       <td style="color:var(--muted)">${d.notes||'—'}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteDiv('${d.id}')">✕</button></td>
+      <td style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="editDiv('${d.id}')" title="Editar">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteDiv('${d.id}')" title="Excluir">✕</button></td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
@@ -1222,18 +1255,40 @@ function quickDeleteInv(invId){
 // ── DIVIDENDOS ──
 function openDivModal(){
   document.getElementById('eDivInvId').value=activeInvId;
+  document.getElementById('eDivEditId').value='';
+  document.getElementById('mDivTitle').textContent='Registrar Rendimento / Dividendo';
   document.getElementById('dDate').value=today();
   document.getElementById('dAmt').value='';
   document.getElementById('dNotes').value='';
   openM('mDiv');
 }
+function editDiv(divId){
+  const c=getC(); if(!c) return;
+  const inv=(c.investments||[]).find(i=>i.id===activeInvId); if(!inv) return;
+  const d=(inv.dividends||[]).find(d=>d.id===divId); if(!d) return;
+  document.getElementById('eDivInvId').value=activeInvId;
+  document.getElementById('eDivEditId').value=divId;
+  document.getElementById('mDivTitle').textContent='✏️ Editar Rendimento';
+  document.getElementById('dDate').value=d.date||today();
+  document.getElementById('dAmt').value=d.amount||'';
+  document.getElementById('dType').value=d.type||'Rendimento';
+  document.getElementById('dNotes').value=d.notes||'';
+  closeM('mDetail');
+  openM('mDiv');
+}
 function saveDiv(){
   const c=getC(); const invId=document.getElementById('eDivInvId').value;
+  const editId=document.getElementById('eDivEditId').value;
   const inv=(c.investments||[]).find(i=>i.id===invId); if(!inv) return;
   const amt=+document.getElementById('dAmt').value;
   if(!amt){ alert('Informe o valor.'); return; }
   inv.dividends=inv.dividends||[];
-  inv.dividends.push({id:uid(), date:document.getElementById('dDate').value, amount:amt, type:document.getElementById('dType').value, notes:document.getElementById('dNotes').value.trim()});
+  if(editId){
+    const d=inv.dividends.find(d=>d.id===editId);
+    if(d){ d.date=document.getElementById('dDate').value; d.amount=amt; d.type=document.getElementById('dType').value; d.notes=document.getElementById('dNotes').value.trim(); }
+  } else {
+    inv.dividends.push({id:uid(), date:document.getElementById('dDate').value, amount:amt, type:document.getElementById('dType').value, notes:document.getElementById('dNotes').value.trim()});
+  }
   save(); closeM('mDiv'); openDetail(invId); renderDash();
 }
 function deleteDiv(divId){
