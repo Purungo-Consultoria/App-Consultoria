@@ -190,6 +190,7 @@ select.fc option{background:var(--surface);}
     <div class="brand-name" id="brandName">Alex Fernando</div>
     <div class="brand-sub">Consultoria de Investimentos</div>
     <div id="syncStatus" style="margin-top:7px;font-size:10px;padding:3px 8px;border-radius:20px;display:inline-block;background:rgba(107,113,148,.2);color:var(--muted)">⏳ Carregando...</div>
+    <div style="margin-top:4px;font-size:9px;color:var(--muted2)" title="Versão do código publicado">v2026-08-15</div>
   </div>
   <div class="sidebar-scroll">
     <div class="sidebar-label">Clientes</div>
@@ -1070,11 +1071,16 @@ function renderPerfChart(inv){
 
   // Valores base (só patrimonial)
   const baseVals=hist.map(h=>h.value);
-  // Valores com dividendos acumulados até cada data do histórico
+  // Dividendos acumulados a partir do PRIMEIRO ponto do histórico
+  // (evita inflar o início com dividendos históricos registrados antes da primeira atualização de preço)
+  const firstHistDate=hist.length?hist[0].date:'9999-12-31';
+  const totalDivAcum=divs.reduce((s,d)=>s+(+d.amount||0),0);
   const totalVals=hist.map(h=>{
-    const cumDiv=divs.filter(d=>d.date<=h.date).reduce((s,d)=>s+(+d.amount||0),0);
+    const cumDiv=divs.filter(d=>d.date>firstHistDate&&d.date<=h.date).reduce((s,d)=>s+(+d.amount||0),0);
     return h.value+cumDiv;
   });
+  // Aviso no último ponto: dividendos anteriores ao histórico existem mas não estão no gráfico
+  const divAntesHistorico=divs.filter(d=>d.date<=firstHistDate).reduce((s,d)=>s+(+d.amount||0),0);
 
   const isTotal=perfMode==='total';
   const mainVals=isTotal?totalVals:baseVals;
@@ -1094,11 +1100,14 @@ function renderPerfChart(inv){
     options:{responsive:true,animation:{duration:200},interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:isTotal&&divs.length>0,labels:{color:'#6b7194',font:{size:10},boxWidth:20}},
-        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{label:i=>{
-          const pct=inv2>0?(i.raw-inv2)/inv2*100:0;
-          const pctStr=i.datasetIndex===1?'':` (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
-          return `  ${i.dataset.label}: ${fR(i.raw)}${pctStr}`;
-        }}}
+        tooltip:{backgroundColor:'#0f1117',borderColor:'#2a2d3e',borderWidth:1,callbacks:{
+          label:i=>{
+            const pct=inv2>0?(i.raw-inv2)/inv2*100:0;
+            const pctStr=i.datasetIndex===1?'':` (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+            return `  ${i.dataset.label}: ${fR(i.raw)}${pctStr}`;
+          },
+          footer:()=>isTotal&&divAntesHistorico>0?[`  * Div. anteriores ao hist.: ${fR(divAntesHistorico)} não exibidos`]:[]
+        }}
       },
       scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194'}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7194',callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}
   });
